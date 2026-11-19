@@ -1,0 +1,51 @@
+@keyframes entrarView {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes subirEntrar {
+  from { opacity: 0; transform: translateY(18px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes pulsarLeve {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.06); }
+}
+
+@keyframes flutuarSuave {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+/* Livros: elevação física com profundidade ao passar o mouse */
+.card-livro .capa,
+.obra-item .capa,
+.ranking-capa .capa {
+  transition: transform 0.45s var(--ease), box-shadow 0.45s var(--ease), filter 0.45s var(--ease);
+  will-change: transform;
+}
+.card-livro:hover .capa,
+.obra-item:hover .capa {
+  transform: scale(1.06) translateY(-10px) rotateX(3deg);
+  box-shadow: 0 26px 44px -16px rgba(42,35,23,0.45);
+  filter: brightness(1.06);
+}
+.card-livro:active .capa { transform: scale(1.02) translateY(-4px); }
+
+.ranking-capa:hover .capa { transform: scale(1.08) rotateY(-4deg); }
+
+/* Notificação sino: leve chacoalhada quando há novas notificações */
+.badge-contador { animation: pulsarLeve 2.4s ease-in-out infinite; }
+
+/* Toast entra deslizando (definido também via classe .mostrar) */
+
+/* Reduz movimento para quem prefere */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}

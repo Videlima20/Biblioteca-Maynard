@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Biblioteca Maynard</title>
+<script>
+  try {
+    if (localStorage.getItem("biblioteca_tema") === "noturno") {
+      document.documentElement.setAttribute("data-tema", "noturno");
+    }
+  } catch (e) {}
+</script>
+<link rel="stylesheet" href="css/style.css" />
+<link rel="stylesheet" href="css/carousel-3d.css" />
+<link rel="stylesheet" href="css/animations.css" />
+<link rel="stylesheet" href="css/responsive.css" />
+</head>
+<body>
+<div id="menu-mobile">
+<div class="shell">
+
+  <!-- ===================== SIDEBAR ===================== -->
+  <aside class="sidebar">
+    <div class="marca">
+      <a href="#" id="marca-home" class="marca-link" aria-label="Ir para Início" title="Ir para Início">
+        <div class="marca-identidade">
+          <div class="marca-icone">BM</div><span>Biblioteca Maynard</span>
+        </div>
+      </a>
+      <button id="btn-sidebar-toggle" class="btn-sidebar-toggle" type="button" aria-label="Recolher menu" title="Recolher menu">
+        <svg id="icone-sidebar-toggle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m15 6-6 6 6 6"/></svg>
+      </button>
+    </div>
+
+    <nav class="nav-principal">
+      <button class="nav-item" data-view-target="inicio">
+        <svg class="nav-icone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 11.5 12 4l9 7.5M5 10v9a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1v-9"/></svg>
+        Início
+      </button>
+      <button class="nav-item" data-view-target="livros">
+        <svg class="nav-icone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H12v18H6.5A2.5 2.5 0 0 1 4 18.5v-13zM12 3h5.5A2.5 2.5 0 0 1 20 5.5v13a2.5 2.5 0 0 1-2.5 2.5H12"/></svg>
+        Livros
+      </button>
+      <button class="nav-item" data-view-target="inicio" data-nav-key="autores" data-anchor="orbita-secao">
+        <svg class="nav-icone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="3.2"/><ellipse cx="12" cy="12" rx="9" ry="4"/></svg>
+        Autores
+      </button>
+      <button class="nav-item" data-view-target="inicio" data-nav-key="categorias" data-anchor="secao-categorias">
+        <svg class="nav-icone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="8" height="8" rx="2"/><rect x="13" y="3" width="8" height="8" rx="2"/><rect x="3" y="13" width="8" height="8" rx="2"/><rect x="13" y="13" width="8" height="8" rx="2"/></svg>
+        Categorias
+      </button>
+      <button class="nav-item" data-view-target="emprestimos">
+        <svg class="nav-icone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 19.5V6a2 2 0 0 1 2-2h9l5 5v10.5a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 19.5z"/><path d="M14 4v5h5"/></svg>
+        Empréstimos
+      </button>
+      <button class="nav-item" data-view-target="conta">
+        <svg class="nav-icone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="8" r="3.4"/><path d="M4.5 20c1.4-3.6 4.4-5.5 7.5-5.5s6.1 1.9 7.5 5.5"/></svg>
+        Minha conta
+      </button>
+
+      <div class="nav-secao-titulo menu-admin-only">Administração</div>
+      <button class="nav-item menu-admin-only" data-view-target="dashboard">
+        <svg class="nav-icone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 19V10M11 19V5M18 19v-7"/></svg>
+        Dashboard
+      </button>
+      <button class="nav-item menu-admin-only" data-view-target="gerenciar">
+        <svg class="nav-icone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H18a1 1 0 0 1 1 1v15.5a1 1 0 0 1-1.4.9L12 18l-5.6 2.4A1 1 0 0 1 5 19.5v-14z"/></svg>
+        Gerenciar livros
+      </button>
+      <button class="nav-item menu-admin-only" data-view-target="admin-emprestimos">
+        <svg class="nav-icone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M7 7h11l-3-3M17 17H6l3 3"/><path d="M18 7v4M6 17v-4"/></svg>
+        Controle de empréstimos
+      </button>
+      <button class="nav-item menu-admin-only" data-view-target="usuarios">
+        <svg class="nav-icone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c1.1-3.2 3.4-5 6-5s4.9 1.8 6 5"/><path d="M17 11.5a2.8 2.8 0 1 0-1.2-5.3M17.5 15c1.8.5 3 2.2 3.5 5"/></svg>
+        Usuários
+      </button>
+      <button class="nav-item menu-admin-only" data-view-target="sistema">
+        <svg class="nav-icone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><ellipse cx="12" cy="6" rx="7" ry="3"/><path d="M5 6v6c0 1.7 3.1 3 7 3s7-1.3 7-3V6M5 12v6c0 1.7 3.1 3 7 3s7-1.3 7-3v-6"/></svg>
+        Backup e dados
+      </button>
+    </nav>
+
+    <div class="sidebar-rodape">
+      <div class="perfil-mini">
+        <div class="perfil-avatar" id="usuario-avatar-letra"></div>
+        <div class="perfil-texto">
+          <strong id="usuario-nome">—</strong>
+          <span id="usuario-tipo">—</span>
+        </div>
+      </div>
+      <button class="btn-logout" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M10 5H5.5A1.5 1.5 0 0 0 4 6.5v11A1.5 1.5 0 0 0 5.5 19H10"/><path d="M13 8l4 4-4 4M9 12h8"/></svg>
+        <span>Sair da conta</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- ===================== CONTEÚDO ===================== -->
+  <div class="conteudo">
+    <header class="topbar">
+      <button id="btn-menu-mobile" class="btn-menu-mobile" type="button" aria-label="Abrir menu" title="Abrir menu">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+      </button>
+
+      <div class="campo-pesquisa-wrap">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+        <input id="campo-pesquisa" type="text" placeholder="Pesquisar livro, autor, categoria ou seção..." autocomplete="off" aria-label="Pesquisar no acervo e no site" aria-controls="resultados-pesquisa-global" />
+        <kbd class="atalho-pesquisa" aria-hidden="true">Ctrl K</kbd>
+        <button id="btn-limpar-pesquisa" class="btn-limpar-pesquisa" type="button" aria-label="Limpar pesquisa" title="Limpar pesquisa">×</button>
+        <div id="resultados-pesquisa-global" class="resultados-pesquisa-global" role="listbox" aria-label="Resultados da pesquisa"></div>
+      </div>
+
+      <div class="topbar-acoes">
+        <span class="topbar-status" aria-label="Sessão ativa"><span class="status-dot"></span><span>Conta ativa</span></span>
+        <button id="btn-tema" class="btn-notificacoes" aria-label="Alternar modo noturno" title="Modo noturno">
+          <svg id="icone-tema" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        </button>
+        <div style="position:relative;">
+          <button id="btn-notificacoes" class="btn-notificacoes" aria-label="Notificações">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M6 9a6 6 0 1 1 12 0c0 5 2 6 2 6H4s2-1 2-6z"/><path d="M9.5 20a2.5 2.5 0 0 0 5 0"/></svg>
+            <span id="badge-notificacoes" class="badge-contador">0</span>
+          </button>
+          <div id="painel-notificacoes" class="painel-notificacoes">
+            <div id="lista-notificacoes"></div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- ========== VIEW: INÍCIO ========== -->
+    <section id="view-inicio" class="view">
+      <div class="hero">
+        <div class="hero-fundo"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/Library%20books%20-%20Shelving%20stacks%20(3554627444).jpg" alt="" /></div>
+        <div class="hero-conteudo">
+          <span class="hero-eyebrow">Acervo escolar digital</span>
+          <h1>Um lugar para achar o próximo livro certo.</h1>
+          <p>Explore o acervo por categoria, conheça os autores em um carrossel em três dimensões e acompanhe seus empréstimos — tudo em um só lugar.</p>
+          <div class="hero-acoes">
+            <button class="btn btn-primario" data-view-target="livros">Explorar catálogo</button>
+            <button class="btn btn-secundario" data-view-target="inicio" data-nav-key="autores" data-anchor="orbita-secao">Conhecer os autores</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="home-insights" aria-label="Resumo do acervo">
+        <div class="home-insight"><span class="home-insight-icon">01</span><div><strong>Acervo organizado</strong><span>Livros por autor e gênero</span></div></div>
+        <div class="home-insight"><span class="home-insight-icon">02</span><div><strong>Empréstimo acompanhado</strong><span>Datas e status em um só lugar</span></div></div>
+        <div class="home-insight"><span class="home-insight-icon">03</span><div><strong>Busca rápida</strong><span>Encontre o que procura em segundos</span></div></div>
+      </div>
+
+      <div id="secao-categorias" class="secao">
+        <div class="secao-cabecalho">
+          <div>
+            <span class="secao-eyebrow">Navegue pelo gênero</span>
+            <h2 class="secao-titulo">Explore por categoria</h2>
+          </div>
+        </div>
+        <div id="grid-categorias" class="grid-categorias"></div>
+      </div>
+
+      <div id="orbita-secao" class="secao orbita-secao">
+        <div class="secao-cabecalho">
+          <div>
+            <span class="secao-eyebrow">Estante orbital</span>
+            <h2 class="secao-titulo">Autores em destaque</h2>
+            <p class="secao-sub">Arraste, use as setas ou o teclado (← →) para girar. Cada autor traz suas obras logo abaixo.</p>
+          </div>
+        </div>
+
+        <div class="orbita-palco">
+          <div class="orbita-track" id="orbita-track"></div>
+          <div class="orbita-controles">
+            <button class="orbita-seta" id="orbita-prev" aria-label="Autor anterior">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg>
+            </button>
+            <button class="orbita-seta" id="orbita-next" aria-label="Próximo autor">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
+            </button>
+          </div>
+        </div>
+        <div id="orbita-indicadores" class="orbita-indicadores"></div>
+
+        <div id="orbita-painel" class="orbita-painel">
+          <h3 id="orbita-nome-autor"></h3>
+          <span id="orbita-periodo-autor"></span>
+          <span id="orbita-citacao"></span>
+          <span id="orbita-bio"></span>
+          <div class="orbita-painel-acoes"><button id="btn-ver-autor" class="btn btn-secundario btn-pequeno" type="button">Ver perfil do autor</button></div>
+        </div>
+
+        <p class="orbita-obras-titulo">Obras no acervo</p>
+        <div id="orbita-obras" class="orbita-obras"></div>
+      </div>
+
+      <div class="secao">
+        <div class="secao-cabecalho">
+          <div>
+            <span class="secao-eyebrow">Ranking de leitura</span>
+            <h2 class="secao-titulo">Livros mais acessados</h2>
+          </div>
+        </div>
+        <div id="lista-mais-acessados" class="lista-ranking"></div>
+      </div>
+    </section>
+
+    <!-- ========== VIEW: LIVROS ========== -->
+    <section id="view-livros" class="view">
+      <div class="secao" style="margin-top:36px;">
+        <div class="secao-cabecalho">
+          <div>
+            <span class="secao-eyebrow">Acervo completo</span>
+            <h2 class="secao-titulo">Livros</h2>
+            <p class="secao-sub" id="livros-contagem"></p>
+          </div>
+          <div class="catalogo-filtros">
+            <select id="filtro-categoria" aria-label="Filtrar por categoria">
+              <option value="">Todas as categorias</option>
+              <option value="romance">Romance</option>
+              <option value="conto">Conto</option>
+              <option value="novela">Novela</option>
+              <option value="teatro">Teatro</option>
+              <option value="ensaios">Ensaios</option>
+              <option value="poema">Poema</option>
+              <option value="texto">Texto</option>
+              <option value="diario">Diário</option>
+              <option value="biografia">Biografia</option>
+            </select>
+            <button id="btn-limpar-filtros" class="btn btn-secundario btn-filtro-limpar" type="button">Limpar filtros</button>
+          </div>
+        </div>
+        <div id="grid-livros" class="grid-livros"></div>
+      </div>
+    </section>
+
+    <!-- ========== VIEW: EMPRÉSTIMOS ========== -->
+    <section id="view-emprestimos" class="view">
+      <div class="secao" style="margin-top:36px;">
+        <div class="secao-cabecalho">
+          <div>
+            <span class="secao-eyebrow">Seus pedidos</span>
+            <h2 class="secao-titulo">Meus empréstimos</h2>
+          </div>
+        </div>
+        <div id="lista-emprestimos"></div>
+      </div>
+    </section>
+
+    <!-- ========== VIEW: MINHA CONTA ========== -->
+    <section id="view-conta" class="view">
+      <div class="secao" style="margin-top:36px;">
+        <div class="secao-cabecalho">
+          <div>
+            <span class="secao-eyebrow">Perfil</span>
+            <h2 class="secao-titulo">Minha conta</h2>
+          </div>
+        </div>
+        <div class="conta-cabecalho">
+          <div class="conta-avatar-grande" id="conta-iniciais">AM</div>
+          <div><span class="secao-eyebrow">Perfil de leitor(a)</span><h3 id="conta-status" class="conta-status">Cadastro em dia</h3><p>Atualize seus dados e acompanhe o seu histórico de leitura.</p></div>
+        </div>
+        <div class="grid-conta">
+          <form id="form-conta" class="painel-form">
+            <div class="painel-form-titulo"><div><span class="secao-eyebrow">Dados pessoais</span><h3>Informações da conta</h3></div></div>
+            <div class="campo"><label for="conta-nome">Nome</label><input id="conta-nome" required minlength="3" /></div>
+            <div class="campo"><label for="conta-email">E-mail</label><input id="conta-email" disabled /></div>
+            <div class="campo"><label for="conta-telefone">Telefone</label><input id="conta-telefone" placeholder="(00) 00000-0000" inputmode="tel" /></div>
+            <button class="btn btn-primario" type="submit">Salvar alterações</button>
+          </form>
+          <div class="conta-stats-grid">
+            <div class="stat-card"><span class="valor" id="conta-total-emprestimos">0</span><span class="rotulo">Total de empréstimos</span></div>
+            <div class="stat-card"><span class="valor" id="conta-emprestimos-ativos">0</span><span class="rotulo">Empréstimos ativos</span></div>
+            <div class="stat-card"><span class="valor" id="conta-emprestimos-atrasados">0</span><span class="rotulo">Atrasados</span></div>
+            <div class="conta-dica"><strong>Pronto para explorar?</strong><span>Use a busca no topo para encontrar títulos, autores e categorias.</span></div>
+          </div>
+          </div>
+        </div>
+    </section>
+
+    <!-- ========== VIEW: DASHBOARD (admin) ========== -->
+    <section id="view-dashboard" class="view">
+      <div class="secao" style="margin-top:36px;">
+        <div class="secao-cabecalho">
+          <div>
+            <span class="secao-eyebrow">Visão geral</span>
+            <h2 class="secao-titulo">Dashboard administrativo</h2>
+          </div>
+        </div>
+        <div class="grid-stats">
+          <div class="stat-card" style="--delay:0ms"><span class="valor" id="stat-total-livros">0</span><span class="rotulo">Títulos no acervo</span></div>
+          <div class="stat-card" style="--delay:40ms"><span class="valor" id="stat-exemplares">0</span><span class="rotulo">Exemplares</span></div>
+          <div class="stat-card" style="--delay:80ms"><span class="valor" id="stat-usuarios">0</span><span class="rotulo">Usuários</span></div>
+          <div class="stat-card" style="--delay:120ms"><span class="valor" id="stat-emprestimos">0</span><span class="rotulo">Empréstimos ativos</span></div>
+          <div class="stat-card" style="--delay:160ms"><span class="valor" id="stat-atrasados">0</span><span class="rotulo">Atrasados</span></div>
+        </div>
+
+        <div class="dashboard-toolbar">
+          <div><span class="dashboard-live"><span class="status-dot"></span> Dados locais em tempo real</span><span class="dashboard-note">Os indicadores desta etapa usam o armazenamento do navegador e serão conectados à API posteriormente.</span></div>
+          <div class="dashboard-toolbar-acoes"><button class="btn btn-secundario" type="button" data-view-target="livros">Ver catálogo</button><button class="btn btn-primario" type="button" data-view-target="gerenciar">Gerenciar acervo</button></div>
+        </div>
+
+        <div class="dashboard-grid-2">
+          <section class="dashboard-painel dashboard-painel-destaque">
+            <div class="painel-topo"><div><span class="secao-eyebrow">Estatística</span><h3>Livros mais acessados</h3></div><span class="painel-tag">Top 5</span></div>
+            <div id="grafico-acessos" class="painel-grafico" aria-label="Gráfico dos livros mais acessados"></div>
+          </section>
+          <section class="dashboard-painel">
+            <div class="painel-topo"><div><span class="secao-eyebrow">Distribuição</span><h3>Acervo por categoria</h3></div><span class="painel-tag">Títulos</span></div>
+            <div id="grafico-categorias" class="grafico-categorias"></div>
+          </section>
+        </div>
+
+        <div class="dashboard-grid-2 dashboard-grid-2-equal">
+          <section class="dashboard-painel">
+            <div class="painel-topo"><div><span class="secao-eyebrow">Curadoria</span><h3>Autores mais procurados</h3></div><span class="painel-tag">Acessos</span></div>
+            <ul id="dash-autores-procurados" class="lista-simples"></ul>
+          </section>
+          <section class="dashboard-painel">
+            <div class="painel-topo"><div><span class="secao-eyebrow">Atividade</span><h3>Movimentações recentes</h3></div><span class="painel-tag">Agora</span></div>
+            <div id="dash-atividades" class="lista-atividade"></div>
+          </section>
+        </div>
+
+        <section class="dashboard-painel dashboard-painel-alerta">
+          <div class="painel-topo"><div><span class="secao-eyebrow">Atenção</span><h3>Empréstimos em atraso</h3></div><button class="btn btn-secundario btn-pequeno" type="button" data-view-target="emprestimos">Ver empréstimos</button></div>
+          <div id="dash-atrasados-lista" class="alertas-emprestimo"></div>
+        </section>
+      </div>
+    </section>
+
+    <!-- ========== VIEW: GERENCIAR LIVROS (admin) ========== -->
+    <section id="view-gerenciar" class="view">
+      <div class="secao" style="margin-top:36px;">
+        <div class="secao-cabecalho">
+          <div>
+            <span class="secao-eyebrow">Acervo</span>
+            <h2 class="secao-titulo">Gerenciar livros</h2>
+          </div>
+          <button id="btn-cadastrar-livro" class="btn btn-primario">+ Cadastrar livro</button>
+        </div>
+        <div class="gerenciar-filtros">
+          <div class="gerenciar-busca"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg><input id="campo-pesquisa-gerenciar" placeholder="Buscar por título, autor ou gênero..." /></div>
+          <select id="filtro-categoria-gerenciar" aria-label="Filtrar gerenciamento por categoria"><option value="">Todas as categorias</option></select>
+          <select id="filtro-disponibilidade-gerenciar" aria-label="Filtrar disponibilidade"><option value="">Todos os status</option><option value="disponivel">Disponíveis</option><option value="indisponivel">Indisponíveis</option></select>
+          <select id="ordenacao-gerenciar" aria-label="Ordenar livros"><option value="titulo-asc">Título A–Z</option><option value="titulo-desc">Título Z–A</option><option value="acessos-desc">Mais acessados</option><option value="recentes">Mais recentes</option></select>
+        </div>
+        <div class="gerenciar-meta"><span id="gerenciar-contagem">0 livros encontrados</span><span>Busca local para prototipação</span></div>
+        <div class="tabela-wrap">
+          <table class="tabela">
+            <thead><tr><th></th><th>Título</th><th>Autor</th><th>Categoria</th><th>Disponível</th><th>Ações</th></tr></thead>
+            <tbody id="tabela-livros-corpo"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- ========== VIEW: CONTROLE DE EMPRÉSTIMOS (admin) ========== -->
+    <section id="view-admin-emprestimos" class="view menu-admin-only">
+      <div class="secao" style="margin-top:36px;">
+        <div class="secao-cabecalho">
+          <div>
+            <span class="secao-eyebrow">Circulação</span>
+            <h2 class="secao-titulo">Controle de empréstimos</h2>
+            <p class="secao-sub">Veja quem está com cada livro e confirme as devoluções.</p>
+          </div>
+        </div>
+        <div class="grid-stats">
+          <div class="stat-card"><span class="valor" id="ae-stat-ativos">0</span><span class="rotulo">Empréstimos ativos</span></div>
+          <div class="stat-card"><span class="valor" id="ae-stat-atrasados">0</span><span class="rotulo">Atrasados</span></div>
+          <div class="stat-card"><span class="valor" id="ae-stat-vencendo">0</span><span class="rotulo">Vencem em até 3 dias</span></div>
+          <div class="stat-card"><span class="valor" id="ae-stat-devolvidos">0</span><span class="rotulo">Já devolvidos</span></div>
+        </div>
+        <div class="gerenciar-filtros" style="margin-top:22px;">
+          <div class="gerenciar-busca"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg><input id="ae-busca" placeholder="Buscar por livro, leitor ou e-mail..." aria-label="Buscar empréstimos" /></div>
+          <select id="ae-filtro" aria-label="Filtrar por situação">
+            <option value="ativos">Ativos</option>
+            <option value="atrasados">Atrasados</option>
+            <option value="vencendo">Vencem em até 3 dias</option>
+            <option value="devolvidos">Devolvidos</option>
+            <option value="todos">Todos</option>
+          </select>
+        </div>
+        <div class="gerenciar-meta"><span id="ae-contagem">0 empréstimos</span><span>Atrasados e mais próximos do vencimento aparecem primeiro</span></div>
+        <div class="tabela-wrap">
+          <table class="tabela tabela-cartoes">
+            <thead><tr><th>Livro</th><th>Leitor</th><th>Retirada</th><th>Devolução</th><th>Situação</th><th>Ação</th></tr></thead>
+            <tbody id="ae-corpo"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== VIEW: USUÁRIOS (admin) ========== -->
+    <section id="view-usuarios" class="view menu-admin-only">
+      <div class="secao" style="margin-top:36px;">
+        <div class="secao-cabecalho">
+          <div>
+            <span class="secao-eyebrow">Pessoas</span>
+            <h2 class="secao-titulo">Usuários</h2>
+            <p class="secao-sub">Leitores e administradores da biblioteca.</p>
+          </div>
+          <button id="btn-novo-usuario" class="btn btn-primario">+ Novo usuário</button>
+        </div>
+        <div class="grid-stats">
+          <div class="stat-card"><span class="valor" id="us-stat-total">0</span><span class="rotulo">Contas</span></div>
+          <div class="stat-card"><span class="valor" id="us-stat-leitores">0</span><span class="rotulo">Leitores</span></div>
+          <div class="stat-card"><span class="valor" id="us-stat-admins">0</span><span class="rotulo">Administradores</span></div>
+          <div class="stat-card"><span class="valor" id="us-stat-atrasados">0</span><span class="rotulo">Com atraso</span></div>
+        </div>
+        <div class="gerenciar-filtros" style="margin-top:22px;">
+          <div class="gerenciar-busca"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg><input id="us-busca" placeholder="Buscar por nome ou e-mail..." aria-label="Buscar usuários" /></div>
+          <select id="us-filtro" aria-label="Filtrar por tipo de conta">
+            <option value="">Todos os tipos</option>
+            <option value="usuario">Leitores</option>
+            <option value="admin">Administradores</option>
+          </select>
+        </div>
+        <div class="gerenciar-meta"><span id="us-contagem">0 usuários</span><span>Senhas nunca são exibidas</span></div>
+        <div class="tabela-wrap">
+          <table class="tabela tabela-cartoes">
+            <thead><tr><th>Usuário</th><th>Tipo</th><th>Ativos</th><th>Atrasados</th><th>Total</th><th>Ações</th></tr></thead>
+            <tbody id="us-corpo"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== VIEW: BACKUP E DADOS (admin) ========== -->
+    <section id="view-sistema" class="view menu-admin-only">
+      <div class="secao" style="margin-top:36px;">
+        <div class="secao-cabecalho">
+          <div>
+            <span class="secao-eyebrow">Dados</span>
+            <h2 class="secao-titulo">Backup e dados</h2>
+            <p class="secao-sub">Todos os dados ficam neste navegador. Se você limpar os dados do site ou trocar de computador, eles se perdem — por isso, exporte um backup de vez em quando.</p>
+          </div>
+        </div>
+        <div class="grid-stats">
+          <div class="stat-card"><span class="valor" id="sis-stat-livros">0</span><span class="rotulo">Livros (inclui arquivados)</span></div>
+          <div class="stat-card"><span class="valor" id="sis-stat-usuarios">0</span><span class="rotulo">Contas</span></div>
+          <div class="stat-card"><span class="valor" id="sis-stat-emprestimos">0</span><span class="rotulo">Empréstimos registrados</span></div>
+          <div class="stat-card"><span class="valor" id="sis-stat-uso">0%</span><span class="rotulo" id="sis-stat-uso-rotulo">do espaço do navegador</span></div>
+        </div>
+        <div class="painel-form" style="margin-top:22px;display:flex;flex-direction:column;gap:20px;">
+          <div class="painel-form-titulo" style="margin-bottom:0;"><span class="secao-eyebrow">Exportar</span><h3>Baixar backup</h3></div>
+          <p class="secao-sub" style="margin-top:-8px;">Gera um arquivo <code>.json</code> com acervo, usuários, empréstimos e notificações. <strong>Atenção:</strong> ele inclui as senhas em texto puro — guarde em local seguro e não compartilhe.</p>
+          <div><button id="btn-exportar" class="btn btn-primario" type="button">Baixar backup</button></div>
+          <div class="painel-form-titulo" style="margin-bottom:0;"><span class="secao-eyebrow">Importar</span><h3>Restaurar de um backup</h3></div>
+          <p class="secao-sub" style="margin-top:-8px;">O arquivo é conferido por inteiro antes de qualquer alteração. Se estiver tudo certo, ele <strong>substitui todos os dados atuais</strong> e você precisará entrar de novo.</p>
+          <div><input id="arquivo-importar" type="file" accept="application/json,.json" hidden /><button id="btn-importar" class="btn btn-secundario" type="button">Escolher arquivo de backup…</button></div>
+          <div id="sis-erros-importacao" class="login-erro" style="display:none;"></div>
+          <div id="sis-bloco-backup-antigo" style="display:none;">
+            <div class="painel-form-titulo" style="margin-bottom:12px;"><span class="secao-eyebrow">Limpeza</span><h3>Backup da atualização anterior</h3></div>
+            <p class="secao-sub" style="margin-bottom:12px;">Ao atualizar o sistema, uma cópia dos dados antigos foi guardada por segurança e ocupa espaço. Se está tudo funcionando, pode apagar.</p>
+            <button id="btn-apagar-backup-antigo" class="btn btn-secundario" type="button">Apagar backup antigo</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <footer class="rodape-site">
+      <span>Biblioteca Maynard</span>
+      <span>Acervo escolar digital · Interface de demonstração</span>
+    </footer>
+  </div>
+</div>
+</div>
+
+<!-- ===================== MODAL: DETALHE DO LIVRO ===================== -->
+<div id="modal-detalhe" class="modal-overlay">
+  <div class="modal-caixa">
+    <div class="modal-cabecalho"><h2>Detalhes do livro</h2><button class="btn-fechar" data-close-modal>✕</button></div>
+    <div class="detalhe-grid">
+      <div class="detalhe-capa-col">
+        <div id="detalhe-capa"></div>
+        <div class="detalhe-acessos" id="detalhe-acessos">0 acessos</div>
+      </div>
+      <div class="detalhe-info">
+        <div class="detalhe-topline">
+          <span id="detalhe-disponibilidade" class="badge"></span>
+          <span id="detalhe-categoria-chip" class="chip-chip"></span>
+        </div>
+        <h2 id="detalhe-titulo"></h2>
+        <div class="detalhe-linha"><b>Autor</b><span id="detalhe-autor"></span></div>
+        <div class="detalhe-linha"><b>Editora</b><span id="detalhe-editora"></span></div>
+        <div class="detalhe-linha"><b>Ano</b><span id="detalhe-ano"></span></div>
+        <div class="detalhe-linha"><b>Categoria</b><span id="detalhe-categoria"></span></div>
+        <div class="detalhe-linha"><b>Exemplares</b><span id="detalhe-qtd"></span></div>
+        <div class="detalhe-disponibilidade-box"><div class="detalhe-disponibilidade-label"><span>Disponibilidade</span><strong id="detalhe-qtd-percentual">0%</strong></div><div class="detalhe-progress"><span id="detalhe-progress-bar"></span></div></div>
+        <p id="detalhe-descricao" class="detalhe-descricao"></p>
+        <div class="detalhe-acoes"><button id="btn-solicitar-livro" class="btn btn-primario">Solicitar livro</button><button id="btn-fechar-detalhe-sec" class="btn btn-secundario" type="button">Fechar</button></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ===================== MODAL: PERFIL DO AUTOR ===================== -->
+<div id="modal-autor" class="modal-overlay">
+  <div class="modal-caixa">
+    <div class="modal-cabecalho"><h2>Perfil do autor</h2><button class="btn-fechar" data-close-modal>✕</button></div>
+    <div class="autor-perfil-grid">
+      <div class="autor-perfil-foto"><img id="autor-modal-foto" alt="" /><span id="autor-modal-fallback"></span></div>
+      <div>
+        <span class="secao-eyebrow">Autor em destaque</span>
+        <h2 id="autor-modal-nome" class="autor-modal-nome"></h2>
+        <span id="autor-modal-anos" class="autor-modal-anos"></span>
+        <p id="autor-modal-bio" class="autor-modal-bio"></p>
+        <div class="autor-modal-obras-head"><span class="secao-eyebrow">Obras no acervo</span><span id="autor-modal-total"></span></div>
+        <div id="autor-modal-obras" class="autor-modal-obras"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== MODAL: SOLICITAR EMPRÉSTIMO ===================== -->
+<div id="modal-emprestimo" class="modal-overlay">
+  <div class="modal-caixa pequena">
+    <div class="modal-cabecalho"><h2>Solicitar livro</h2><button class="btn-fechar" data-close-modal>✕</button></div>
+    <div class="modal-contexto" id="emprestimo-contexto">Selecionando um livro…</div>
+    <form id="form-emprestimo">
+      <div class="campo"><label for="form-emprestimo-nome">Nome</label><input id="form-emprestimo-nome" required /></div>
+      <div class="campo"><label for="form-emprestimo-email">E-mail</label><input id="form-emprestimo-email" type="email" required /></div>
+      <div class="campo"><label for="form-emprestimo-telefone">Telefone</label><input id="form-emprestimo-telefone" placeholder="(00) 00000-0000" /></div>
+      <div class="campo-linha">
+        <div class="campo"><label for="form-emprestimo-data">Data</label><input id="form-emprestimo-data" type="date" required /></div>
+        <div class="campo"><label for="form-emprestimo-devolucao">Devolução</label><input id="form-emprestimo-devolucao" type="date" required /></div>
+      </div>
+      <button class="btn btn-primario" type="submit" style="width:100%;justify-content:center;">Confirmar</button>
+    </form>
+  </div>
+</div>
+
+<!-- ===================== MODAL: CADASTRAR / EDITAR LIVRO (admin) ===================== -->
+<div id="modal-livro" class="modal-overlay">
+  <div class="modal-caixa">
+    <div class="modal-cabecalho"><h2 id="modal-livro-titulo">Cadastrar livro</h2><button class="btn-fechar" data-close-modal>✕</button></div>
+    <form id="form-livro">
+      <div class="campo-linha">
+        <div class="campo"><label for="campo-titulo">Título</label><input id="campo-titulo" required /></div>
+        <div class="campo"><label for="campo-autor">Autor</label><input id="campo-autor" list="lista-autores" autocomplete="off" required /><datalist id="lista-autores"></datalist></div>
+      </div>
+      <div class="campo-linha">
+        <div class="campo"><label for="campo-editora">Editora</label><input id="campo-editora" required /></div>
+        <div class="campo"><label for="campo-ano">Ano</label><input id="campo-ano" type="number" min="1500" max="2100" step="1" required /></div>
+      </div>
+      <div class="campo-linha">
+        <div class="campo">
+          <label for="campo-categoria">Categoria</label>
+          <select id="campo-categoria" required>
+            <option value="romance">Romance</option>
+            <option value="conto">Conto</option>
+            <option value="novela">Novela</option>
+            <option value="teatro">Teatro</option>
+            <option value="ensaios">Ensaios</option>
+            <option value="poema">Poema</option>
+            <option value="texto">Texto</option>
+            <option value="diario">Diário</option>
+            <option value="biografia">Biografia</option>
+          </select>
+        </div>
+        <div class="campo"><label for="campo-qtd">Quantidade total</label><input id="campo-qtd" type="number" min="1" max="9999" step="1" required /></div>
+      </div>
+      <div class="campo"><label for="campo-descricao">Descrição</label><textarea id="campo-descricao" required></textarea></div>
+      <button id="modal-livro-botao" class="btn btn-primario" type="submit" style="width:100%;justify-content:center;">Cadastrar</button>
+    </form>
+  </div>
+</div>
+
+<!-- ===================== MODAL: NOVO USUÁRIO (admin) ===================== -->
+<div id="modal-usuario" class="modal-overlay menu-admin-only">
+  <div class="modal-caixa">
+    <div class="modal-cabecalho"><h2>Novo usuário</h2><button class="btn-fechar" data-close-modal>✕</button></div>
+    <form id="form-usuario" autocomplete="off">
+      <div class="campo"><label for="usuario-campo-nome">Nome completo</label><input id="usuario-campo-nome" required minlength="3" /></div>
+      <div class="campo"><label for="usuario-campo-email">E-mail</label><input id="usuario-campo-email" type="email" required autocomplete="off" /></div>
+      <div class="campo-linha">
+        <div class="campo"><label for="usuario-campo-senha">Senha provisória</label><input id="usuario-campo-senha" type="text" required minlength="8" autocomplete="off" placeholder="8+ caracteres, letras e números" /></div>
+        <div class="campo"><label for="usuario-campo-tipo">Tipo de conta</label>
+          <select id="usuario-campo-tipo"><option value="usuario">Leitor(a)</option><option value="admin">Administrador(a)</option></select>
+        </div>
+      </div>
+      <button class="btn btn-primario" type="submit" style="width:100%;justify-content:center;">Criar usuário</button>
+    </form>
+  </div>
+</div>
+
+<!-- ===================== CONFIRMAÇÃO ===================== -->
+<div id="confirm-overlay" class="modal-overlay">
+  <div class="modal-caixa pequena">
+    <p id="confirm-texto" style="font-size:1rem;color:var(--ink);"></p>
+    <div class="confirm-acoes">
+      <button id="confirm-nao" class="btn btn-secundario">Cancelar</button>
+      <button id="confirm-sim" class="btn btn-primario">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+
+<script src="js/db.js"></script>
+<script src="js/data.js"></script>
+<script src="js/theme.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/covers.js"></script>
+<script src="js/authors-photo.js"></script>
+<script src="js/carousel3d.js"></script>
+<script src="js/admin.js"></script>
+<script src="js/app.js"></script>
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    const user = Auth.getUser();
+    if (user) document.getElementById("usuario-avatar-letra").textContent = user.nome[0].toUpperCase();
+  });
+</script>
+</body>
+</html>

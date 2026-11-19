@@ -1,0 +1,70 @@
+@media (max-width: 1080px) {
+  .grid-conta { grid-template-columns: 1fr; }
+  .detalhe-grid { grid-template-columns: 120px 1fr; }
+}
+
+@media (max-width: 900px) {
+  .sidebar {
+    position: fixed; z-index: 60; left: 0; top: 0;
+    transform: translateX(-100%);
+    transition: transform 0.35s var(--ease);
+    box-shadow: var(--shadow-lg);
+  }
+  #menu-mobile.aberto .sidebar { transform: translateX(0); }
+  #menu-mobile.aberto::before {
+    content: ""; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 50;
+  }
+
+  .btn-sidebar-toggle { display: none; }
+  .shell.sidebar-colapsada .sidebar {
+    width: 260px; padding: 28px 20px;
+  }
+  .shell.sidebar-colapsada .marca { justify-content: space-between; }
+  .shell.sidebar-colapsada .marca-identidade span { display: inline; }
+  .shell.sidebar-colapsada .perfil-texto { display: flex; }
+  .shell.sidebar-colapsada .nav-secao-titulo { display: block; }
+  .shell.sidebar-colapsada .nav-item {
+    justify-content: flex-start; gap: 12px; font-size: 0.92rem;
+    padding-left: 12px; padding-right: 12px;
+  }
+  .shell.sidebar-colapsada .nav-item:hover { transform: translateX(2px); }
+  .shell.sidebar-colapsada .perfil-mini { justify-content: flex-start; padding: 10px; }
+  .shell.sidebar-colapsada .btn-logout { justify-content: center; padding: 9px; }
+  .shell.sidebar-colapsada .btn-logout span { display: inline; }
+
+  .btn-menu-mobile {
+    display: flex; align-items: center; justify-content: center;
+    width: 38px; height: 38px; border-radius: 10px;
+    background: var(--surface); border: 1px solid var(--line-strong); color: var(--ink);
+    cursor: pointer;
+  }
+  .campo-pesquisa-wrap { max-width: none; }
+  .view { padding: 0 18px 50px; }
+  .topbar { padding: 14px 18px; }
+  .painel-notificacoes { right: 18px; width: min(320px, 90vw); }
+}
+
+@media (max-width: 640px) {
+  .hero { padding: 26px; min-height: 300px; }
+  .grid-categorias { grid-template-columns: repeat(2, 1fr); }
+  .grid-livros { grid-template-columns: repeat(2, 1fr); gap: 16px; }
+  .detalhe-grid { grid-template-columns: 1fr; }
+  .detalhe-grid .capa { max-width: 160px; margin: 0 auto; }
+  .campo-linha { grid-template-columns: 1fr; }
+  .orbita-palco { height: 280px; }
+  .foto-autor { width: 96px; height: 96px; }
+  .orbita-track { width: 100px; height: 130px; }
+  .ranking-item { grid-template-columns: 28px 44px 1fr auto; gap: 10px; padding: 10px 12px; }
+  .stat-card .valor { font-size: 1.5rem; }
+}
+
+/* Tabelas administrativas viram cartões em telas estreitas (a ação principal não fica escondida atrás de rolagem). */
+@media (max-width: 640px) {
+  table.tabela-cartoes, table.tabela-cartoes tbody, table.tabela-cartoes tr, table.tabela-cartoes td { display: block; width: 100%; }
+  table.tabela-cartoes thead { display: none; }
+  table.tabela-cartoes tr { padding: 12px 14px; border-bottom: 1px solid var(--line); }
+  table.tabela-cartoes td { display: flex; justify-content: space-between; align-items: center; gap: 12px; border: 0; padding: 5px 0; text-align: right; border-radius: 0; }
+  table.tabela-cartoes td[data-label]::before { content: attr(data-label); flex: none; text-align: left; color: var(--muted); font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.06em; }
+  table.tabela-cartoes td .linha-secundaria { text-align: right; }
+  table.tabela-cartoes td .col-acoes { width: 100%; justify-content: flex-end; flex-wrap: wrap; }
+}

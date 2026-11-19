@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Entrar — Biblioteca Maynard</title>
+<script>
+  try {
+    if (localStorage.getItem("biblioteca_tema") === "noturno") {
+      document.documentElement.setAttribute("data-tema", "noturno");
+    }
+  } catch (e) {}
+</script>
+<link rel="stylesheet" href="css/style.css" />
+<link rel="stylesheet" href="css/animations.css" />
+<link rel="stylesheet" href="css/responsive.css" />
+<style>
+  .login-lado-imagem {
+    flex: 1.1; position: relative; display: none;
+  }
+  .login-lado-imagem img { width: 100%; height: 100%; object-fit: cover; filter: saturate(0.58) brightness(0.78); }
+  .login-lado-imagem::after {
+    content: ""; position: absolute; inset: 0;
+    background: linear-gradient(180deg, rgba(18,15,10,0.60), rgba(18,15,10,0.94)),
+      linear-gradient(90deg, rgba(18,15,10,0.88), rgba(18,15,10,0.28) 55%);
+  }
+  .login-cita {
+    position: absolute; left: 48px; bottom: 56px; right: 48px; z-index: 2;
+    font-family: var(--font-display); font-style: italic; font-size: 1.5rem; color: #F7F0E1;
+    text-shadow: 0 3px 18px rgba(0,0,0,0.45);
+    max-width: 480px; animation: subirEntrar 1s var(--ease) both; animation-delay: 0.3s;
+  }
+  .login-cita span { display: block; margin-top: 12px; font-family: var(--font-mono); font-style: normal; font-size: 0.72rem; color: rgba(247,240,225,0.72); letter-spacing: 0.06em; text-shadow: 0 2px 12px rgba(0,0,0,0.42); }
+  .login-lado-form {
+    flex: 1; display: flex; align-items: center; justify-content: center; padding: 40px;
+  }
+  .login-caixa { width: 100%; max-width: 380px; animation: subirEntrar 0.7s var(--ease) both; }
+  .login-marca { display: flex; align-items: center; gap: 10px; margin-bottom: 36px; }
+  .login-titulo { font-size: 1.7rem; margin-bottom: 6px; }
+  .login-sub { color: var(--muted); font-size: 0.88rem; margin-bottom: 28px; }
+  .campo-label-row { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:6px; }
+  .campo-label-row label { margin:0; }
+  .btn-mostrar-senha { border:0; background:transparent; color:var(--gold); font:500 .62rem var(--font-mono); cursor:pointer; padding:2px 0; }
+  .btn-mostrar-senha:hover { color:var(--gold-bright); }
+  .campo-senha-wrap { position:relative; }
+  .campo-senha-wrap input { width:100%; padding-right:44px; }
+  .btn-senha-icone { position:absolute; right:8px; top:50%; transform:translateY(-50%); width:30px; height:30px; border:0; border-radius:8px; background:transparent; color:var(--muted); cursor:pointer; }
+  .btn-senha-icone:hover { background:var(--surface-2); color:var(--ink); }
+  .login-erro {
+    background: rgba(178,67,79,0.14); border: 1px solid rgba(178,67,79,0.4); color: var(--crimson);
+    padding: 10px 14px; border-radius: 10px; font-size: 0.82rem; margin-bottom: 16px; display: none;
+  }
+  .login-erro.mostrar { display: block; animation: subirEntrar 0.3s var(--ease); }
+  .login-abas { display: flex; gap: 4px; margin-bottom: 22px; border-bottom: 1px solid var(--line); }
+  .login-abas button {
+    flex: 1; background: none; border: 0; border-bottom: 2px solid transparent; margin-bottom: -1px;
+    padding: 10px 6px; color: var(--muted); font: inherit; font-size: 0.86rem; cursor: pointer;
+  }
+  .login-abas button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--gold); }
+  .login-dica { color: var(--muted); font-size: 0.72rem; margin: -8px 0 14px; }
+  [hidden] { display: none !important; }
+  .login-demo {
+    margin-top: 26px; padding: 14px 16px; border-radius: 12px;
+    background: var(--surface); border: 1px solid var(--line);
+    font-size: 0.76rem; color: var(--muted); display: flex; flex-direction: column; gap: 6px;
+  }
+  .login-demo button {
+    text-align: left; background: none; border: none; color: var(--gold-bright);
+    cursor: pointer; font-size: 0.76rem; padding: 0; font-family: var(--font-mono);
+  }
+  .login-demo button:hover { text-decoration: underline; }
+  .btn-tema-login {
+    position: absolute; top: 20px; right: 20px; z-index: 3;
+    width: 38px; height: 38px; border-radius: 50%;
+    background: var(--surface); border: 1px solid var(--line-strong); color: var(--ink);
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+  }
+  .btn-tema-login svg { width: 18px; height: 18px; }
+  @media (min-width: 900px) { .login-lado-imagem { display: block; } }
+</style>
+</head>
+<body class="pagina-login">
+
+  <button id="btn-tema" class="btn-tema-login" aria-label="Alternar modo noturno" title="Modo noturno">
+    <svg id="icone-tema" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+  </button>
+
+  <div class="login-lado-imagem">
+    <img src="https://commons.wikimedia.org/wiki/Special:FilePath/Library%20books%20-%20Shelving%20stacks%20(3554627444).jpg" alt="Estantes de uma biblioteca" />
+    <p class="login-cita">
+      “Uma biblioteca é o hospital da mente.”
+      <span>BIBLIOTECA MAYNARD — ACERVO ESCOLAR</span>
+    </p>
+  </div>
+
+  <div class="login-lado-form">
+    <div class="login-caixa">
+      <div class="login-marca">
+        <div class="marca-icone">BM</div>
+        <strong>Biblioteca Maynard</strong>
+      </div>
+
+      <div class="login-abas" role="tablist">
+        <button type="button" id="aba-entrar" role="tab" aria-selected="true">Entrar</button>
+        <button type="button" id="aba-criar" role="tab" aria-selected="false">Criar conta</button>
+      </div>
+
+      <h1 class="login-titulo" id="login-titulo">Entrar</h1>
+      <p class="login-sub" id="login-sub">Acesse com sua conta de leitor(a) ou administrador(a).</p>
+
+      <div id="login-erro" class="login-erro"></div>
+
+      <form id="form-login">
+        <div class="campo">
+          <label for="login-email">E-mail</label>
+          <input id="login-email" type="email" required placeholder="seu@email.com" autocomplete="username" />
+        </div>
+        <div class="campo">
+          <div class="campo-label-row"><label for="login-senha">Senha</label><button type="button" id="btn-mostrar-senha" class="btn-mostrar-senha">Mostrar</button></div>
+          <div class="campo-senha-wrap"><input id="login-senha" type="password" required placeholder="••••••••" autocomplete="current-password" /><button type="button" id="btn-mostrar-senha-icone" class="btn-senha-icone" aria-label="Mostrar senha" title="Mostrar senha">○</button></div>
+        </div>
+        <button class="btn btn-primario" type="submit" style="width:100%; justify-content:center; margin-top: 8px;">Entrar</button>
+      </form>
+
+      <form id="form-registro" hidden autocomplete="on">
+        <div class="campo">
+          <label for="reg-nome">Nome completo</label>
+          <input id="reg-nome" required minlength="3" autocomplete="name" placeholder="Seu nome" />
+        </div>
+        <div class="campo">
+          <label for="reg-email">E-mail</label>
+          <input id="reg-email" type="email" required autocomplete="email" placeholder="seu@email.com" />
+        </div>
+        <div class="campo">
+          <div class="campo-label-row"><label for="reg-senha">Senha</label><button type="button" id="btn-mostrar-senhas-reg" class="btn-mostrar-senha">Mostrar</button></div>
+          <input id="reg-senha" type="password" required minlength="8" autocomplete="new-password" placeholder="••••••••" />
+        </div>
+        <p class="login-dica">Mínimo de 8 caracteres, com letras e números.</p>
+        <div class="campo">
+          <label for="reg-senha2">Repita a senha</label>
+          <input id="reg-senha2" type="password" required minlength="8" autocomplete="new-password" placeholder="••••••••" />
+        </div>
+        <button class="btn btn-primario" type="submit" style="width:100%; justify-content:center; margin-top: 8px;">Criar conta de leitor(a)</button>
+      </form>
+
+      <div class="login-demo" id="login-demo">
+        <strong style="color:var(--ink-dim)">Contas de demonstração</strong>
+        <button type="button" data-demo="admin">admin@biblioteca.com · Admin123!</button>
+        <button type="button" data-demo="usuario">usuario@biblioteca.com · Usuario123!</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/db.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/theme.js"></script>
+  <script src="js/auth.js"></script>
+  <script>
+    seedDatabase();
+    if (Auth.isLogged()) window.location.href = "index.html";
+
+    const form = document.getElementById("form-login");
+    const erroBox = document.getElementById("login-erro");
+
+    form.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const email = document.getElementById("login-email").value;
+      const senha = document.getElementById("login-senha").value;
+      const res = Auth.login(email, senha);
+      if (!res.ok) {
+        erroBox.textContent = res.erro;
+        erroBox.classList.add("mostrar");
+        return;
+      }
+      window.location.href = "index.html";
+    });
+
+    const senha = document.getElementById("login-senha");
+    const mostrar = document.getElementById("btn-mostrar-senha");
+    const mostrarIcone = document.getElementById("btn-mostrar-senha-icone");
+    const alternarSenha = () => {
+      const visivel = senha.type === "text";
+      senha.type = visivel ? "password" : "text";
+      mostrar.textContent = visivel ? "Mostrar" : "Ocultar";
+      mostrarIcone.textContent = visivel ? "○" : "●";
+      mostrarIcone.setAttribute("aria-label", visivel ? "Mostrar senha" : "Ocultar senha");
+    };
+    mostrar.addEventListener("click", alternarSenha);
+    mostrarIcone.addEventListener("click", alternarSenha);
+
+    // --- abas Entrar / Criar conta
+    const abaEntrar = document.getElementById("aba-entrar");
+    const abaCriar = document.getElementById("aba-criar");
+    const formRegistro = document.getElementById("form-registro");
+    const demo = document.getElementById("login-demo");
+    const mostrarAba = (criar) => {
+      abaEntrar.setAttribute("aria-selected", String(!criar));
+      abaCriar.setAttribute("aria-selected", String(criar));
+      form.hidden = criar;
+      demo.hidden = criar;
+      formRegistro.hidden = !criar;
+      document.getElementById("login-titulo").textContent = criar ? "Criar conta" : "Entrar";
+      document.getElementById("login-sub").textContent = criar
+        ? "Cadastre-se como leitor(a) para pegar livros emprestados."
+        : "Acesse com sua conta de leitor(a) ou administrador(a).";
+      erroBox.classList.remove("mostrar");
+    };
+    abaEntrar.addEventListener("click", () => mostrarAba(false));
+    abaCriar.addEventListener("click", () => mostrarAba(true));
+
+    const erro = (msg) => { erroBox.textContent = msg; erroBox.classList.add("mostrar"); };
+    formRegistro.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const senha1 = document.getElementById("reg-senha").value;
+      if (senha1 !== document.getElementById("reg-senha2").value) { erro("As senhas não são iguais."); return; }
+      const res = Auth.registrar(document.getElementById("reg-nome").value, document.getElementById("reg-email").value, senha1);
+      if (!res.ok) { erro(res.erro); return; }
+      window.location.href = "index.html";
+    });
+    document.getElementById("btn-mostrar-senhas-reg").addEventListener("click", (e) => {
+      const campos = [document.getElementById("reg-senha"), document.getElementById("reg-senha2")];
+      const mostrar = campos[0].type === "password";
+      campos.forEach((c) => { c.type = mostrar ? "text" : "password"; });
+      e.target.textContent = mostrar ? "Ocultar" : "Mostrar";
+    });
+
+    document.querySelectorAll("[data-demo]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        if (btn.dataset.demo === "admin") {
+          document.getElementById("login-email").value = "admin@biblioteca.com";
+          document.getElementById("login-senha").value = "Admin123!";
+        } else {
+          document.getElementById("login-email").value = "usuario@biblioteca.com";
+          document.getElementById("login-senha").value = "Usuario123!";
+        }
+      });
+    });
+  </script>
+</body>
+</html>
