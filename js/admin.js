@@ -262,7 +262,8 @@ function renderAdminEmprestimos() {
       <td>${e.status === "solicitacao"
         ? `<div class="col-acoes"><button class="btn-icone" data-ae-emprestimo-confirmar="${e.id}">Confirmar empréstimo</button><button class="btn-icone btn-icone-perigo" data-ae-emprestimo-recusar="${e.id}">Recusar</button></div>`
         : e.status === "pendente" ? `<div class="col-acoes"><button class="btn-icone" data-ae-devolver="${e.id}">Confirmar recebimento</button><button class="btn-icone btn-icone-perigo" data-ae-recusar="${e.id}">Não recebi</button></div>`
-        : e.status === "ativo" ? `<div class="col-acoes"><button class="btn-icone" data-ae-devolver="${e.id}">Registrar devolução</button></div>` : ""}</td>
+        : e.status === "ativo" ? `<div class="col-acoes"><button class="btn-icone" data-ae-devolver="${e.id}">Registrar devolução</button></div>`
+        : e.status === "devolvido" ? `<div class="col-acoes"><button class="btn-icone" data-ae-reabrir="${e.id}">Retornar para em aberto</button></div>` : ""}</td>
     </tr>`).join("")
     : `<tr><td colspan="6"><div class="tabela-vazia"><strong>Nenhum empréstimo encontrado</strong><span>Mude o filtro ou a busca.</span></div></td></tr>`;
 }
@@ -390,6 +391,19 @@ function initAdminExtras() {
       if (!resRec.ok) { toast(resRec.erro, "erro"); return; }
       toast("Devolução recusada. O empréstimo continua ativo e o leitor foi avisado.");
       renderAdminEmprestimos();
+      return;
+    }
+    const reabrir = ev.target.closest("[data-ae-reabrir]");
+    if (reabrir) {
+      const idReabrir = Number(reabrir.dataset.aeReabrir);
+      const emprestimo = DB.getEmprestimos().find((e) => e.id === idReabrir);
+      if (!emprestimo || emprestimo.status !== "devolvido") return;
+      const confirmaReabertura = await confirmar(`Retornar o empréstimo de "${emprestimo.titulo}" de ${emprestimo.nome || emprestimo.email} para em aberto? A devolução registrada será desfeita.`, "Retornar para em aberto");
+      if (!confirmaReabertura) return;
+      const resultado = DB.reabrirEmprestimo(idReabrir, Auth.getUser());
+      if (!resultado.ok) { toast(resultado.erro, "erro"); return; }
+      toast("Empréstimo retornado para em aberto.");
+      renderAdminEmprestimos(); renderCatalogo(); renderNotificacoes(); renderMaisAcessados();
       return;
     }
     const btn = ev.target.closest("[data-ae-devolver]");
