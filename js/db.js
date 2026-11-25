@@ -371,6 +371,24 @@ const DB = {
     return { ok: true };
   },
 
+  /* Reverte uma devolução confirmada por engano: reabre o empréstimo existente. */
+  reabrirEmprestimo(id, quem) {
+    if (!quem || quem.tipo !== "admin") return { ok: false, erro: "Somente a biblioteca pode reabrir um empréstimo." };
+    const lista = this._ler(CHAVE.emprestimos);
+    const idx = lista.findIndex((e) => e.id === id);
+    if (idx === -1) return { ok: false, erro: "Empréstimo não encontrado." };
+    if (lista[idx].status !== "devolvido") return { ok: false, erro: "Este empréstimo não está marcado como devolvido." };
+    const { devolvidoEm, ...resto } = lista[idx];
+    lista[idx] = { ...resto, status: "ativo" };
+    if (!this._gravar(CHAVE.emprestimos, lista)) return { ok: false, erro: "Não foi possível reabrir o empréstimo." };
+    const livro = this.getLivrosTodos().find((l) => l.id === lista[idx].livroId);
+    const titulo = livro ? livro.titulo : "livro";
+    this.addNotificacao(lista[idx].email, `A biblioteca desfez o registro de devolução de "${titulo}". O empréstimo voltou a ficar em aberto.`, {
+      tipo: "devolucao_revertida", emprestimoId: id, livroId: lista[idx].livroId, titulo,
+    });
+    return { ok: true };
+  },
+
   /* O administrador não recebeu o livro: o empréstimo volta a ficar ativo. */
   recusarDevolucao(id, quem) {
     if (!quem || quem.tipo !== "admin") return { ok: false, erro: "Somente a biblioteca pode recusar uma devolução." };
