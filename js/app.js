@@ -677,7 +677,7 @@ function ativarModais() {
     const user = Auth.getUser();
     const livro = State.livroSelecionado;
     if (!user || !livro || Number(livro.qtdDisp) <= 0) return;
-    const ativo = DB.getEmprestimos().some((e) => e.email === user.email && e.livroId === livro.id && e.status === "ativo");
+    const ativo = DB.getEmprestimos().some((e) => e.email === user.email && e.livroId === livro.id && DB.emAberto(e));
     if (ativo) { toast("Você já possui este livro em empréstimo.", "erro"); return; }
     $("#form-emprestimo-nome").value = user.nome;
     $("#form-emprestimo-email").value = user.email;
@@ -894,7 +894,7 @@ function ativarNotificacoes() {
 function renderEmprestimos() {
   const user = Auth.getUser();
   const emprestimos = DB.getEmprestimos().filter((e) => e.email === user.email).sort((a, b) => new Date(b.data) - new Date(a.data));
-  const ativos = emprestimos.filter((e) => e.status === "ativo");
+  const ativos = emprestimos.filter((e) => DB.emAberto(e));
   const atrasados = ativos.filter((e) => DB.emAtraso(e));
   const cont = $("#lista-emprestimos");
   cont.innerHTML = `
@@ -906,10 +906,11 @@ function renderEmprestimos() {
     ${emprestimos.length ? emprestimos.map((e) => {
       const atrasado = DB.emAtraso(e);
       const devolvido = e.status === "devolvido";
+      const pendente = e.status === "pendente";
       return `<article class="emprestimo-item ${atrasado ? "atrasado" : ""} ${devolvido ? "devolvido" : ""}">
         <div class="emprestimo-capa">${renderCoverHTML({ titulo: e.titulo, autor: e.autor || "", categoria: e.categoria || "romance" })}</div>
-        <div class="emprestimo-dados"><div class="emprestimo-kicker">${devolvido ? "Histórico" : "Empréstimo ativo"}</div><strong>${escapeHTML(e.titulo)}</strong><span>${escapeHTML(e.autor || "Livro do acervo")}</span><small>Emprestado em ${formatarDataISO(e.data)} · devolução ${formatarDataISO(e.devolucao)}${e.devolvidoEm ? ` · devolvido em ${formatarData(e.devolvidoEm)}` : ""}</small></div>
-        <div class="emprestimo-acao"><span class="badge ${devolvido ? "badge-disp" : atrasado ? "badge-indisp" : "badge-disp"}">${devolvido ? "Devolvido" : atrasado ? "Atrasado" : "Em dia"}</span>${!devolvido ? `<button type="button" class="btn btn-secundario btn-pequeno" data-devolver="${e.id}">Registrar devolução</button>` : ""}</div>
+        <div class="emprestimo-dados"><div class="emprestimo-kicker">${devolvido ? "Histórico" : pendente ? "Devolução informada" : "Empréstimo ativo"}</div><strong>${escapeHTML(e.titulo)}</strong><span>${escapeHTML(e.autor || "Livro do acervo")}</span><small>Emprestado em ${formatarDataISO(e.data)} · devolução ${formatarDataISO(e.devolucao)}${e.devolvidoEm ? ` · devolvido em ${formatarData(e.devolvidoEm)}` : ""}${pendente ? ` · informada em ${formatarData(e.devolucaoInformadaEm)}. A biblioteca ainda vai conferir o livro` : ""}</small></div>
+        <div class="emprestimo-acao"><span class="badge ${devolvido ? "badge-disp" : pendente ? "badge-pendente" : atrasado ? "badge-indisp" : "badge-disp"}">${devolvido ? "Devolvido" : pendente ? "Aguardando confirmação" : atrasado ? "Atrasado" : "Em dia"}</span>${e.status === "ativo" ? `<button type="button" class="btn btn-secundario btn-pequeno" data-devolver="${e.id}">Informar devolução</button>` : ""}</div>
       </article>`;
     }).join("") : `<div class="estado-vazio estado-vazio-card"><span class="estado-vazio-icon">▱</span><strong>Nenhum empréstimo registrado</strong><p>Explore o catálogo para encontrar seu próximo livro.</p><button type="button" class="btn btn-primario" data-view-target="livros">Explorar catálogo</button></div>`}`;
 
@@ -917,11 +918,11 @@ function renderEmprestimos() {
     const id = Number(btn.dataset.devolver);
     const emprestimo = DB.getEmprestimos().find((e) => e.id === id);
     if (!emprestimo || emprestimo.status !== "ativo") return;
-    const ok = await confirmar(`Registrar a devolução de "${emprestimo.titulo}"?`);
+    const ok = await confirmar(`Informar que você devolveu "${emprestimo.titulo}"? A devolução só será concluída quando a biblioteca confirmar o recebimento.`, "Informar devolução");
     if (!ok) return;
-    const res = DB.devolver(id, user);
+    const res = DB.solicitarDevolucao(id, user);
     if (!res.ok) { toast(res.erro, "erro"); return; }
-    toast("Devolução registrada com sucesso.");
+    toast("Devolução informada. Aguarde a confirmação da biblioteca.");
     renderEmprestimos(); renderCatalogo(); renderMaisAcessados(); renderNotificacoes();
   }));
   $$("[data-view-target]", cont).forEach((btn) => btn.addEventListener("click", () => irPara(btn.dataset.viewTarget)));
@@ -934,7 +935,7 @@ function renderMinhaConta() {
   $("#conta-telefone").value = user.telefone || "";
 
   const emprestimos = DB.getEmprestimos().filter((e) => e.email === user.email);
-  const ativos = emprestimos.filter((e) => e.status === "ativo");
+  const ativos = emprestimos.filter((e) => DB.emAberto(e));
   const atrasados = ativos.filter((e) => DB.emAtraso(e));
   $("#conta-total-emprestimos").textContent = emprestimos.length;
   $("#conta-emprestimos-ativos").textContent = ativos.length;
