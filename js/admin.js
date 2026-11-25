@@ -50,17 +50,22 @@ const Admin = {
     if (!containerEl) return;
     const livros = DB.getLivros();
     const cats = DB.getCategorias().map((c) => ({ ...c, total: livros.filter((l) => l.categoria === c.id).length }))
+      .filter((c) => c.total > 0)
       .sort((a, b) => b.total - a.total);
     const total = Math.max(1, livros.length);
-    const cores = ["var(--gold)", "var(--forest)", "var(--teal)", "var(--crimson)", "var(--gold-bright)", "var(--ink-dim)"];
+    /* Mesma cor da categoria nas capas e nos cards (CATEGORY_PALETTE), para o gráfico bater com o resto do site. */
+    const corDe = (c) => (typeof CATEGORY_PALETTE !== "undefined" && CATEGORY_PALETTE[c.id]?.[1]) || "var(--gold)";
     let acumulado = 0;
-    const stops = cats.map((c, i) => {
+    const stops = cats.map((c) => {
+      const ini = acumulado;
       acumulado += (c.total / total) * 360;
-      return `${cores[i % cores.length]} ${acumulado.toFixed(2)}deg`;
+      return `${corDe(c)} ${ini.toFixed(2)}deg ${acumulado.toFixed(2)}deg`;
     }).join(", ");
     containerEl.innerHTML = `
-      <div class="categoria-donut" style="background:conic-gradient(${stops})"></div>
-      <div class="categoria-legenda">${cats.slice(0, 6).map((c, i) => `<div><span class="categoria-legenda-cor" style="background:${cores[i % cores.length]}"></span><span>${escapeHTML(c.nome)}</span><strong>${c.total}</strong></div>`).join("")}</div>`;
+      <div class="categoria-donut" style="background:conic-gradient(${stops || "var(--surface-2) 0deg 360deg"})">
+        <div class="categoria-donut-centro"><strong>${livros.length}</strong><span>títulos</span></div>
+      </div>
+      <div class="categoria-legenda">${cats.map((c) => `<div><span class="categoria-legenda-cor" style="background:${corDe(c)}"></span><span>${escapeHTML(c.nome)}</span><strong>${c.total}</strong></div>`).join("")}</div>`;
   },
 
   renderAtividades(containerEl) {

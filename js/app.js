@@ -13,6 +13,8 @@ const State = {
   livroSelecionado: null,
   navAtiva: "inicio",
   ultimaPesquisa: "",
+  ordemCategorias: "padrao",
+  voltarCategorias: false, // true quando o catálogo foi aberto a partir da página Categorias
 };
 
 /* -------------------------------------------------------------------------
@@ -42,7 +44,7 @@ function escopoPesquisaGlobal(termo) {
     { id: "inicio", nome: "Início", alvo: "inicio", descricao: "Página inicial da biblioteca", aliases: "home biblioteca principal" },
     { id: "livros", nome: "Livros", alvo: "livros", descricao: "Catálogo completo de livros", aliases: "acervo catálogo catalogo" },
     { id: "autores", nome: "Autores", alvo: "inicio", anchor: "orbita-secao", descricao: "Autores em destaque", aliases: "escritores escritoras" },
-    { id: "categorias", nome: "Categorias", alvo: "inicio", anchor: "secao-categorias", descricao: "Categorias e gêneros", aliases: "gêneros generos" },
+    { id: "categorias", nome: "Categorias", alvo: "categorias", descricao: "Categorias e gêneros", aliases: "gêneros generos" },
     { id: "emprestimos", nome: "Empréstimos", alvo: "emprestimos", descricao: "Seus empréstimos", aliases: "emprestimo pedidos devolução devolucao" },
     { id: "conta", nome: "Minha conta", alvo: "conta", descricao: "Dados do seu perfil", aliases: "perfil usuário usuario" },
   ];
@@ -114,6 +116,7 @@ function executarResultadoPesquisa(resultado) {
     campo.value = resultado.categoria.nome;
     $("#filtro-categoria").value = resultado.categoria.id;
     irPara("livros", "livros");
+    State.voltarCategorias = true;
     renderCatalogo();
     return;
   }
@@ -195,7 +198,9 @@ document.addEventListener("DOMContentLoaded", () => {
     initAreaAdmin();
   }
 
-  irPara("inicio");
+  const [viewInicial, navInicial] = destinoDoHash() || ["inicio", "inicio"];
+  irPara(viewInicial, navInicial, "substituir");
+  if (navInicial === "autores") setTimeout(() => document.getElementById("orbita-secao")?.scrollIntoView({ behavior: "smooth", block: "start" }), 300);
 });
 
 function montarShell(user) {
@@ -231,6 +236,23 @@ function ativarNavegacao() {
     if (texto) btn.setAttribute("title", texto);
   });
 
+  $("#btn-voltar-categorias")?.addEventListener("click", voltarParaCategorias);
+  window.addEventListener("popstate", irParaHash);
+
+  $("#ordem-categorias")?.addEventListener("change", (e) => {
+    State.ordemCategorias = e.target.value;
+    renderCategorias();
+  });
+
+  $("#chips-categorias")?.addEventListener("click", (e) => {
+    const chip = e.target.closest("[data-cat]");
+    if (!chip) return;
+    State.categoriaAtiva = chip.dataset.cat || null;
+    State.filtro = "";
+    $("#campo-pesquisa").value = "";
+    renderCatalogo();
+  });
+
   const marcaHome = $("#marca-home");
   marcaHome?.addEventListener("click", (e) => {
     e.preventDefault();
@@ -259,7 +281,6 @@ function ativarNavegacao() {
 
   const inicio = $("#view-inicio");
   const anchors = [
-    ["secao-categorias", "categorias"],
     ["orbita-secao", "autores"],
   ];
   if (inicio && "IntersectionObserver" in window) {
@@ -303,11 +324,34 @@ function montarSidebar() {
   });
 }
 
-const VIEWS_SO_ADMIN = ["admin-emprestimos", "usuarios", "sistema"];
+const VIEWS_SO_ADMIN = ["admin-emprestimos", "usuarios", "sistema", "dashboard", "gerenciar"];
 
-function irPara(viewId, navKey = viewId) {
+/* Endereço da página (#categorias, #livros...) para o botão Voltar do navegador funcionar. */
+function destinoDoHash() {
+  let h = "";
+  try { h = decodeURIComponent(location.hash.slice(1)); } catch (e) {}
+  if (h === "autores") return ["inicio", "autores"];
+  if (!h || !document.getElementById(`view-${h}`)) return null;
+  if (VIEWS_SO_ADMIN.includes(h) && !Auth.isAdmin()) return null;
+  return [h, h];
+}
+
+function irParaHash() {
+  const [view, nav] = destinoDoHash() || ["inicio", "inicio"];
+  irPara(view, nav, "nenhum");
+  if (nav === "autores") setTimeout(() => document.getElementById("orbita-secao")?.scrollIntoView({ behavior: "smooth", block: "start" }), 100);
+}
+
+function irPara(viewId, navKey = viewId, historico = "novo") {
   if (VIEWS_SO_ADMIN.includes(viewId) && !Auth.isAdmin()) return;
   State.navAtiva = navKey || viewId;
+  if (historico !== "nenhum") {
+    const alvoHash = `#${navKey === "autores" ? "autores" : viewId}`;
+    if (location.hash !== alvoHash) {
+      try { history[historico === "substituir" ? "replaceState" : "pushState"](null, "", alvoHash); } catch (e) {}
+    }
+  }
+  if (viewId !== "livros") State.voltarCategorias = false;
   $$(".view").forEach((v) => v.classList.remove("ativo"));
   const target = $(`#view-${viewId}`);
   if (target) target.classList.add("ativo");
@@ -321,6 +365,7 @@ function irPara(viewId, navKey = viewId) {
     if (navKey === "inicio") setTimeout(() => window.scrollTo({ top: 0, behavior: "smooth" }), 0);
     renderMaisAcessados();
   }
+  if (viewId === "categorias") renderCategorias();
   if (viewId === "conta") renderMinhaConta();
   if (viewId === "emprestimos") renderEmprestimos();
   if (viewId === "dashboard") renderDashboard();
@@ -336,19 +381,30 @@ window.irPara = irPara;
    ------------------------------------------------------------------------- */
 function renderCategorias() {
   const cont = $("#grid-categorias");
-  const categorias = DB.getCategorias();
   const livros = DB.getLivros();
-  cont.innerHTML = categorias
+  const totalGeral = Math.max(1, livros.length);
+  let itens = DB.getCategorias().map((c) => {
+    const lista = livros.filter((l) => l.categoria === c.id);
+    return { ...c, total: lista.length, capas: [...lista].sort((a, b) => (b.acessos || 0) - (a.acessos || 0)).slice(0, 3) };
+  });
+  if (State.ordemCategorias === "az") itens.sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
+  else if (State.ordemCategorias === "mais") itens.sort((a, b) => b.total - a.total);
+  itens = [...itens.filter((c) => c.total > 0), ...itens.filter((c) => !c.total)]; // categorias vazias ao final
+  cont.innerHTML = itens
     .map((c, i) => {
-      const total = livros.filter((l) => l.categoria === c.id).length;
+      const vazia = c.total === 0;
+      const pct = Math.round((c.total / totalGeral) * 100);
+      const cor = CATEGORY_PALETTE[c.id]?.[1] || "var(--gold)";
       return `
-        <button class="card-categoria" style="--delay:${i * 40}ms" data-cat="${c.id}">
+        <button class="card-categoria${vazia ? " card-categoria-vazia" : ""}" style="--delay:${i * 40}ms;--cat-cor:${cor}" data-cat="${c.id}">
           <div class="card-categoria-topo">
-            <span class="card-categoria-nome">${c.nome}</span>
+            <span class="card-categoria-nome">${escapeHTML(c.nome)}</span>
             <span class="card-categoria-seta">→</span>
           </div>
-          <p class="card-categoria-desc">${c.desc}</p>
-          <span class="card-categoria-total">${total} título${total === 1 ? "" : "s"}</span>
+          <p class="card-categoria-desc">${escapeHTML(c.desc)}</p>
+          ${vazia ? "" : `<div class="card-categoria-capas" aria-hidden="true">${c.capas.map((l) => `<span class="mini-capa">${renderCoverHTML(l)}</span>`).join("")}</div>`}
+          <div class="card-categoria-barra" aria-hidden="true"><span style="width:${pct}%"></span></div>
+          <span class="card-categoria-total">${vazia ? "Em breve" : `${c.total} livro${c.total === 1 ? "" : "s"} · ${pct}% do acervo`}</span>
         </button>`;
     })
     .join("");
@@ -358,9 +414,28 @@ function renderCategorias() {
       State.filtro = "";
       $("#campo-pesquisa").value = "";
       irPara("livros");
+      State.voltarCategorias = true;
       renderCatalogo();
     });
   });
+}
+
+function renderChipsCategorias() {
+  const cont = $("#chips-categorias");
+  if (!cont) return;
+  const livros = DB.getLivros();
+  const chip = (id, nome, n) =>
+    `<button type="button" class="chip-filtro${(State.categoriaAtiva || "") === id ? " ativo" : ""}" data-cat="${id}">${escapeHTML(nome)}<span>${n}</span></button>`;
+  cont.innerHTML = chip("", "Todas", livros.length)
+    + DB.getCategorias().map((c) => chip(c.id, c.nome, livros.filter((l) => l.categoria === c.id).length)).join("");
+}
+
+function voltarParaCategorias() {
+  State.categoriaAtiva = null;
+  State.filtro = "";
+  $("#campo-pesquisa").value = "";
+  $("#filtro-categoria").value = "";
+  irPara("categorias");
 }
 
 /* -------------------------------------------------------------------------
@@ -492,11 +567,21 @@ function renderCatalogo() {
   if (filtroSelect.value !== (State.categoriaAtiva || "")) filtroSelect.value = State.categoriaAtiva || "";
 
   $("#livros-contagem").textContent = `${livros.length} ${livros.length === 1 ? "livro encontrado" : "livros encontrados"}`;
+  const catAtual = State.categoriaAtiva ? DB.getCategorias().find((c) => c.id === State.categoriaAtiva) : null;
+  $("#livros-eyebrow").textContent = catAtual ? "Categoria" : "Acervo completo";
+  $("#livros-titulo").textContent = catAtual ? catAtual.nome : "Livros";
+  renderChipsCategorias();
+  const btnVoltar = $("#btn-voltar-categorias");
+  if (btnVoltar) btnVoltar.style.display = State.voltarCategorias && State.categoriaAtiva ? "" : "none";
+  const categoriaVazia = State.categoriaAtiva && !State.filtro && !livros.length;
   cont.innerHTML = livros.length
     ? livros.map((l, i) => cardLivroHTML(l, i)).join("")
+    : categoriaVazia
+    ? `<div class="estado-vazio estado-vazio-card"><span class="estado-vazio-icon">▦</span><strong>Nenhum livro em ${escapeHTML(nomeCategoria(State.categoriaAtiva))}</strong><p>Ainda não há livros cadastrados nesta categoria.</p><button class="btn btn-secundario" type="button" id="btn-vazio-categorias">Ver categorias</button></div>`
     : `<div class="estado-vazio estado-vazio-card"><span class="estado-vazio-icon">⌕</span><strong>Nenhum livro encontrado</strong><p>Tente outro título, autor, gênero ou use "Limpar filtros".</p><button class="btn btn-secundario" type="button" id="btn-vazio-limpar">Limpar pesquisa</button></div>`;
 
   $$(".card-livro", cont).forEach((el) => el.addEventListener("click", () => abrirDetalheLivro(Number(el.dataset.id))));
+  $("#btn-vazio-categorias")?.addEventListener("click", voltarParaCategorias);
   $("#btn-vazio-limpar")?.addEventListener("click", () => {
     State.filtro = ""; State.categoriaAtiva = null;
     $("#campo-pesquisa").value = ""; $("#filtro-categoria").value = "";
