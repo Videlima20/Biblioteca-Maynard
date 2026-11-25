@@ -1,24 +1,36 @@
 # Biblioteca Maynard
 
-Sistema web desenvolvido para facilitar a organização e o gerenciamento do acervo de uma biblioteca escolar.
+Sistema web de apoio à organização de uma biblioteca escolar, desenvolvido como projeto de Trabalho de Conclusão de Curso (TCC) por estudantes do curso Técnico em Desenvolvimento de Sistemas.
 
 ## Sobre o projeto
 
-O Biblioteca Maynard surgiu a partir da dificuldade enfrentada pela bibliotecária para registrar, localizar e organizar os livros da biblioteca. A proposta é centralizar as informações do acervo em um sistema simples, facilitando o cadastro, a consulta e o acompanhamento dos livros.
+O Biblioteca Maynard busca facilitar o gerenciamento do acervo e das movimentações da biblioteca, reunindo catálogo, cadastro de usuários, empréstimos, devoluções e ferramentas administrativas em uma interface web.
 
-## Principais funcionalidades
+## Problema
 
-- Cadastro, edição e organização de livros.
-- Pesquisa e consulta do catálogo.
-- Organização por autores e categorias.
-- Visualização da disponibilidade dos exemplares.
-- Acesso separado para administrador e leitor.
-- Registro e acompanhamento de empréstimos e devoluções.
-- Painel administrativo com informações do acervo.
-- Backup e restauração dos dados locais.
-- Interface adaptável e opção de tema claro/escuro.
+A organização manual do acervo e dos empréstimos pode dificultar o registro, a consulta e o acompanhamento dos livros. O projeto propõe centralizar essas tarefas em uma aplicação para apoiar o trabalho da bibliotecária.
 
-## Tecnologias utilizadas
+## Funcionalidades da versão local
+
+- Consulta, pesquisa e filtragem do catálogo.
+- Visualização de informações de livros e autores.
+- Cadastro e gerenciamento de livros, autores e categorias.
+- Cadastro e gerenciamento local de usuários.
+- Solicitações, gerenciamento, devolução e acompanhamento de empréstimos.
+- Notificações internas.
+- Painel administrativo e indicadores.
+- Exportação e importação de backup JSON.
+- Tema claro/escuro e interface responsiva.
+
+> A lista descreve recursos identificados na aplicação local. Não representa um relatório de testes de aceitação.
+
+## Arquitetura e estágio atual
+
+A aplicação principal utiliza HTML, CSS e JavaScript e, na versão local, mantém os dados no armazenamento do navegador (`localStorage`/`sessionStorage`). O repositório também contém uma API em Node.js, Express e MySQL, com consultas públicas do catálogo e rotas de cadastro/login de contas.
+
+**A integração integral entre a interface principal e a API/MySQL ainda não está concluída.** Empréstimos, administração e persistência principal da interface continuam no modo local. A API deve ser entendida como uma etapa de desenvolvimento separada, não como backend completo da aplicação.
+
+## Tecnologias
 
 - HTML5
 - CSS3
@@ -26,92 +38,44 @@ O Biblioteca Maynard surgiu a partir da dificuldade enfrentada pela bibliotecár
 - Node.js
 - Express
 - MySQL
-- bcryptjs
+- `mysql2`
+- `bcryptjs`
+- `dotenv`
 
-## Como executar a aplicação
+## Executar a aplicação local
 
-### Aplicação web local
-
-1. Extraia a pasta completa do projeto.
+1. Clone ou baixe o repositório.
 2. Abra `login.html` em um navegador atualizado.
-3. Entre com uma conta de demonstração ou crie uma conta de leitor.
+3. Entre com uma conta de demonstração ou crie uma conta local.
+4. Os dados são armazenados no navegador utilizado.
 
-Contas locais de demonstração:
+A execução local não exige que a API/MySQL esteja iniciada.
 
-| Perfil | E-mail | Senha |
-|---|---|---|
-| Administrador | `admin@biblioteca.com` | `Admin123!` |
-| Leitor | `usuario@biblioteca.com` | `Usuario123!` |
+## Executar a API (componente separado)
 
-### API
+Consulte [`docs/EXECUCAO-E-MANUTENCAO.md`](docs/EXECUCAO-E-MANUTENCAO.md) e [`docs/API-E-MYSQL.md`](docs/API-E-MYSQL.md). A API exige Node.js, dependências, MySQL e configuração de ambiente.
 
-A API está na pasta `api`. Para instalar as dependências:
+## Documentação
 
-```bash
-cd api
-npm install
-```
+- [Arquitetura e dados](docs/ARQUITETURA-E-DADOS.md)
+- [API e MySQL](docs/API-E-MYSQL.md)
+- [Execução e manutenção](docs/EXECUCAO-E-MANUTENCAO.md)
+- [Status de implementação](docs/STATUS-IMPLEMENTACAO.md)
+- [Auditoria estática e roteiro de testes](docs/AUDITORIA-CODIGO.md)
 
-Configure as variáveis de conexão com o MySQL em um arquivo `.env`, utilizando `.env.example` como referência, e inicie o servidor:
+## Limitações conhecidas
 
-```bash
-node server.js
-```
-
-Consulte `api/README.md` e `docs/API-E-MYSQL.md` para os detalhes da API e do banco de dados.
-
-## Atualização da integração com MySQL
-
-Esta seção reúne as instruções que estavam no antigo `LEIA-ME.md`. Ela se aplica especificamente ao pacote de atualização que contém a integração do catálogo, cadastro, login e saída no mesmo servidor Node.js. Não é um procedimento necessário para simplesmente abrir a versão local da aplicação.
-
-### Aplicar o pacote de atualização
-
-1. Se o servidor estiver em execução, interrompa-o no terminal com **Ctrl+C**.
-2. Extraia o pacote de atualização. Copie as pastas `api` e `js`, além dos arquivos `index.html` e `login.html`, para dentro da pasta existente `Biblioteca Maynard`. No Windows, confirme a mesclagem das pastas e a substituição dos arquivos correspondentes.
-3. Preserve o arquivo `api/.env` e a pasta `api/node_modules` já configurados no ambiente de destino. Não compartilhe o arquivo `.env`, pois ele pode conter credenciais do banco de dados.
-4. No terminal, entre na pasta `api` e execute:
-
-```bash
-node server.js
-```
-
-5. Acesse `http://127.0.0.1:3000/` e atualize a página com **Ctrl+F5**. Use a opção **Criar conta** para cadastrar um leitor. Se a conta já existir, tente a opção **Entrar**.
-
-Se o terminal estiver na pasta principal do projeto, execute `cd api` antes de iniciar o servidor.
-
-### Conferir o cadastro no MySQL Workbench
-
-Execute a consulta abaixo para visualizar os usuários cadastrados, com os registros mais recentes primeiro:
-
-```sql
-SELECT id, nome, email, tipo
-FROM biblioteca_maynard.usuarios
-ORDER BY id DESC;
-```
-
-Depois, use **Sair da conta** e entre novamente com o e-mail e a senha cadastrados. Se o site informar que o e-mail já está cadastrado, tente entrar pela opção **Entrar**.
-
-### Observações sobre essa integração
-
-- O formulário público de cadastro cria contas de leitor.
-- A senha é armazenada como hash bcrypt.
-- A API de sessão devolve apenas os dados da conta autenticada.
-- As sessões ficam na memória do servidor; após reiniciar o Node.js, pode ser necessário entrar novamente.
-- Empréstimos, edição de perfil e operações administrativas não fazem parte dessa entrega específica de integração.
-- O procedimento original foi testado com Express e bcrypt instalados e um banco simulado. A consulta no Workbench é a verificação final no banco MySQL do ambiente utilizado.
-
-## Observação sobre armazenamento
-
-Na versão local, a interface pode utilizar o armazenamento do navegador (`localStorage`) para os dados e a autenticação. A integração com a API/MySQL depende de estar utilizando o pacote de atualização e a configuração descritos na seção anterior. Os dados armazenados localmente no navegador não são compartilhados automaticamente entre computadores.
-
-As contas de demonstração são destinadas apenas a testes.
+- Dados da versão local não são compartilhados entre computadores ou navegadores.
+- Backup e restauração são operações manuais na versão local.
+- O backup da versão local contém credenciais de demonstração em texto puro; mantenha-o privado e utilize apenas dados fictícios.
+- A integração completa do frontend com o backend MySQL ainda é trabalho futuro.
+- A API mantém sessões em memória; elas são perdidas quando o processo do servidor é reiniciado.
+- A API não deve ser exposta à internet ou tratada como implantação de produção sem uma revisão adicional e implementação de autorização adequada.
 
 ## Equipe
 
-- Antônio Gabriel
-- Arnaldo Portella
-- Yuri Henrique
-- Victor Leandro
-- Isabela Aparecida
+Consulte a apresentação e a documentação do TCC para conhecer os integrantes e suas atribuições.
 
-Projeto desenvolvido na área de Desenvolvimento de Sistemas.
+## Licença
+
+Consulte o arquivo [`LICENSE`](LICENSE).

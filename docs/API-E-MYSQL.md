@@ -1,47 +1,39 @@
-# API e integração com MySQL
+# API e MySQL
 
-Este documento descreve exclusivamente o conteúdo encontrado na pasta `api/`. Ele não afirma que todas as telas do aplicativo já utilizam o banco relacional.
+## Escopo
 
-## 1. Visão geral
+A API é um componente separado da aplicação local. No estado examinado, ela oferece consultas públicas de catálogo e rotas de cadastro, login, sessão e logout. A interface principal ainda não utiliza o adaptador `js/api-client.js` nem migrou suas operações de empréstimos/administração para MySQL.
 
-A API foi construída com Node.js e Express. O arquivo `server.js` cria um pool de conexões com MySQL por meio de `mysql2/promise`, carrega as configurações de ambiente com `dotenv` e registra as rotas HTTP.
+## Tecnologias
 
-Dependências declaradas em `api/package.json`:
+Node.js, Express, MySQL, `mysql2`, `dotenv` e `bcryptjs`.
 
-- `express`
-- `mysql2`
-- `dotenv`
-- `bcryptjs`
+## Rotas observadas
 
-O servidor utiliza a porta definida em `PORT` ou, na ausência dela, a porta `3000`. O endereço de escuta é `127.0.0.1`.
+| Método | Endpoint | Descrição |
+|---|---|---|
+| GET | `/api/livros` | Consulta o catálogo de livros não arquivados e disponibilidade calculada a partir de empréstimos ativos. |
+| GET | `/api/autores` | Consulta autores. |
+| GET | `/api/categorias` | Consulta categorias. |
+| POST | `/api/cadastro` | Cadastro de conta de leitor, com hash bcrypt. |
+| POST | `/api/login` | Verificação de credenciais e criação de sessão. |
+| GET | `/api/sessao` | Consulta sessão corrente. |
+| POST | `/api/sair` | Encerra a sessão. |
 
-## 2. Arquivos
+## Configuração
 
-| Arquivo | Responsabilidade |
-|---|---|
-| `server.js` | Configuração do Express, pool MySQL, arquivos estáticos e rotas públicas do catálogo. |
-| `contas.js` | Cadastro, login, consulta da sessão e logout. |
-| `importar.js` | Importação do backup inicial para o banco, dentro de uma transação. |
-| `.env` | Configurações locais e credenciais; não deve ser versionado. |
-| `.env.example` | Modelo sem credenciais reais. |
-| `package.json` | Dependências Node.js. |
-
-## 3. Configuração do ambiente
-
-Crie `api/.env` com os valores do ambiente utilizado:
+Crie um arquivo `api/.env` local (não versionado) com variáveis como:
 
 ```dotenv
 PORT=3000
 DB_HOST=127.0.0.1
 DB_PORT=3306
-DB_USER=usuario_do_banco
-DB_PASSWORD=senha_do_banco
+DB_USER=usuario
+DB_PASSWORD=senha
 DB_NAME=biblioteca_maynard
 ```
 
-O arquivo `.env` deve permanecer fora de repositórios públicos e não deve ser compartilhado com credenciais reais.
-
-Instalação:
+Instale as dependências e inicie:
 
 ```bash
 cd api
@@ -49,99 +41,26 @@ npm install
 node server.js
 ```
 
-O processo testa a conexão com `SELECT 1` antes de começar a escutar requisições.
+O servidor está configurado para escutar em `127.0.0.1`. A página inicial do servidor direciona para a tela de login.
 
-## 4. Endpoints identificados
+## Estrutura esperada
 
-### Catálogo — consultas GET
+As consultas e scripts referenciam tabelas `livros`, `autores`, `categorias`, `usuarios` e `emprestimos`. O código também menciona notificações no modelo local. O ZIP analisado não contém um script SQL completo de criação/versionamento do esquema, portanto a estrutura abaixo não deve ser tratada como especificação oficial de banco:
 
-| Método | Rota | Conteúdo |
-|---|---|---|
-| GET | `/api/livros` | Livros não arquivados, autor, categoria, editora, ano, descrição, quantidade total, disponibilidade calculada e acessos. |
-| GET | `/api/autores` | Autores e informações complementares. |
-| GET | `/api/categorias` | Categorias cadastradas. |
+- `livros`: identificadores, título, autor/categoria, editora, ano, descrição, quantidade, acessos, criação e arquivamento.
+- `autores`: dados biográficos e de destaque.
+- `categorias`: nome e descrição.
+- `usuarios`: nome, email, hash de senha, telefone e tipo.
+- `emprestimos`: usuário, livro, datas e status.
 
-As consultas são públicas e retornam JSON. A disponibilidade dos livros é calculada no SQL subtraindo a quantidade de empréstimos com status `ativo` da quantidade total de exemplares.
+## Limitações
 
-### Contas e sessão
+- As telas principais continuam operando com dados locais.
+- Não existe integração completa dos empréstimos e operações administrativas com MySQL.
+- Sessões são mantidas em memória e não sobrevivem à reinicialização.
+- O servidor está limitado ao loopback e à origem local configurada; não é um serviço pronto para hospedagem.
+- É necessário criar e versionar um esquema SQL oficial, além de testes e endpoints faltantes, antes de uma migração integral.
 
-| Método | Rota | Comportamento |
-|---|---|---|
-| POST | `/api/cadastro` | Cria uma conta do tipo `usuario`, gera hash bcrypt e inicia sessão. |
-| POST | `/api/login` | Verifica e-mail e senha e inicia sessão. |
-| GET | `/api/sessao` | Retorna os dados públicos da sessão válida. |
-| POST | `/api/sair` | Encerra a sessão e limpa o cookie. |
+## Segurança e uso demonstrativo
 
-As rotas POST de conta esperam JSON e validam a origem da requisição. O cadastro público sempre cria uma conta de leitor; a rota não oferece criação pública de administradores.
-
-## 5. Autenticação e sessão da API
-
-O módulo `contas.js` utiliza `bcryptjs` com custo de hash 12. A comparação da senha é feita com `bcrypt.compare`.
-
-Após o login ou cadastro, o servidor cria um token aleatório com `node:crypto` e o envia em um cookie chamado `maynard_sessao`, configurado com `HttpOnly` e `SameSite=Strict`.
-
-As sessões são armazenadas em um `Map` na memória do processo Node.js, com duração de oito horas. Consequências:
-
-- reiniciar o servidor encerra as sessões existentes;
-- executar mais de uma instância não compartilha as sessões;
-- não há armazenamento persistente ou distribuído de sessões.
-
-O módulo também aplica um limite simples de tentativas às rotas de cadastro e login.
-
-## 6. Estrutura MySQL esperada pelo código
-
-O arquivo de criação do esquema SQL não está presente no pacote analisado. Portanto, a tabela abaixo é uma leitura das tabelas e colunas referenciadas nas consultas e comandos da API, não um script oficial de criação.
-
-| Tabela | Colunas identificadas no código |
-|---|---|
-| `categorias` | `id`, `nome`, `descricao` |
-| `autores` | `id`, `nome`, `anos`, `bio`, `citacao`, `wiki`, `destaque` |
-| `usuarios` | `id`, `nome`, `email`, `senha_hash`, `telefone`, `tipo` |
-| `livros` | `id`, `titulo`, `autor_id`, `categoria_id`, `editora`, `ano`, `quantidade_total`, `descricao`, `acessos`, `criado_em`, `arquivado` |
-| `emprestimos` | `id`, `usuario_id`, `livro_id`, `data_emprestimo`, `data_prevista_devolucao`, `devolvido_em`, `status` |
-| `notificacoes` | `id`, `usuario_id`, `emprestimo_id`, `mensagem`, `detalhes`, `lida`, `criado_em` |
-
-As rotas atuais consultam diretamente as tabelas `livros`, `autores`, `categorias`, `emprestimos` e `usuarios`.
-
-## 7. Importação inicial
-
-O script `importar.js` lê `backup/biblioteca-maynard-backup-inicial.json` e tenta inserir os dados nas tabelas MySQL.
-
-Características observadas:
-
-- exige o esquema de backup versão 2;
-- verifica se as tabelas de destino estão vazias;
-- executa as inserções em uma transação;
-- converte senhas do backup em hashes bcrypt;
-- relaciona autores, categorias, usuários, livros e empréstimos;
-- executa rollback se ocorrer uma falha antes do commit.
-
-O script não deve ser executado sobre tabelas que já contenham registros. O próprio código cancela a importação quando encontra dados.
-
-A importação depende de o banco e as tabelas já terem sido criados. O pacote não inclui o DDL necessário para essa criação.
-
-## 8. Limite da integração atual
-
-O arquivo `js/api-client.js` contém um adaptador para carregar livros, autores e categorias pelas rotas públicas da API. Porém, o arquivo não é incluído pelas tags `<script>` de `index.html` e `login.html`.
-
-Além disso, `js/auth.js` implementa autenticação local com `sessionStorage`, e `js/db.js` persiste as coleções no `localStorage`.
-
-Assim, no estado atual:
-
-- a API possui rotas de catálogo e conta;
-- o cliente de API está presente, mas não está conectado às páginas;
-- as telas e regras administrativas continuam utilizando a camada local;
-- as operações de livros, empréstimos, usuários e notificações não estão integradas ao MySQL pela interface.
-
-## 9. Próximas etapas recomendadas
-
-1. Definir e versionar o script SQL de criação do banco.
-2. Conectar o login e o cadastro da interface às rotas `/api/login` e `/api/cadastro`.
-3. Consultar `/api/sessao` ao carregar a aplicação e tratar sessões expiradas.
-4. Integrar o catálogo ao `api-client.js`.
-5. Criar endpoints protegidos para operações administrativas.
-6. Implementar autorização no servidor, verificando o perfil em cada operação.
-7. Migrar empréstimos, devoluções, usuários, notificações e backups para o banco.
-8. Adicionar testes automatizados para rotas, validações e regras de negócio.
-9. Configurar HTTPS, política de cookies adequada ao ambiente e gerenciamento seguro de segredos antes de qualquer publicação.
-
+Contas de teste e senhas de demonstração não devem ser reutilizadas em ambiente real. A API utiliza bcrypt para contas criadas por suas rotas, mas isso não torna a aplicação local nem a API prontas para produção. Antes de implantação real, devem ser implementadas autorização server-side, proteção operacional, persistência de sessão apropriada, política de segredo e testes de segurança.
