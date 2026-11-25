@@ -64,6 +64,7 @@
 :root[data-tema="noturno"] .btn-primario:hover { box-shadow: 0 14px 28px -10px rgba(79,115,87,0.5); }
 :root[data-tema="noturno"] .badge-disp { background: rgba(111,179,164,0.14); }
 :root[data-tema="noturno"] .badge-indisp { background: rgba(201,123,132,0.14); }
+:root[data-tema="noturno"] .badge-pendente { background: rgba(212,175,90,0.16); }
 :root[data-tema="noturno"] .orbita-item.ativo .foto-autor { box-shadow: 0 20px 40px -14px rgba(199,154,82,0.4); }
 :root[data-tema="noturno"] .card-livro:hover .capa,
 :root[data-tema="noturno"] .obra-item:hover .capa { box-shadow: 0 26px 44px -16px rgba(0,0,0,0.55); }
@@ -450,6 +451,7 @@ p { margin: 0; line-height: 1.6; color: var(--ink-dim); }
 }
 .badge-disp { background: rgba(46,133,119,0.16); color: var(--teal); }
 .badge-indisp { background: rgba(178,67,79,0.16); color: var(--crimson); }
+.badge-pendente { background: rgba(196,154,60,0.18); color: var(--gold); }
 
 /* ------- CAPA (gerada) ------- */
 .capa {

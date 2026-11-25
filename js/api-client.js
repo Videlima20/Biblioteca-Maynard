@@ -81,7 +81,7 @@
   DB.registrarAcesso = () => {}; // Contagem do MySQL é somente leitura nesta etapa.
   DB.getEmprestimos = () => []; // Não confundir histórico local com dados do MySQL.
   DB.getNotificacoes = () => [];
-  for (const metodo of ['criarLivro', 'atualizarLivro', 'removerLivro', 'emprestar', 'devolver', 'criarUsuario', 'alterarPapel', 'removerUsuario', 'importar']) {
+  for (const metodo of ['criarLivro', 'atualizarLivro', 'removerLivro', 'emprestar', 'solicitarDevolucao', 'devolver', 'recusarDevolucao', 'criarUsuario', 'alterarPapel', 'removerUsuario', 'importar']) {
     DB[metodo] = () => ({ ok: false, erro: aviso, motivo: aviso, erros: [aviso] });
   }
   DB.setUsuarios = DB.setNotificacoes = () => false;

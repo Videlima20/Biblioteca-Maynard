@@ -19,7 +19,7 @@ const Admin = {
       exemplares: livros.reduce((s, l) => s + (Number(l.qtdTotal) || 0), 0),
       exemplaresDisponiveis,
       usuarios: usuarios.length,
-      emprestimos: emprestimos.filter((e) => e.status === "ativo").length,
+      emprestimos: emprestimos.filter((e) => DB.emAberto(e)).length,
       devolvidos: emprestimos.filter((e) => e.status === "devolvido").length,
       atrasados,
     };
@@ -72,7 +72,7 @@ const Admin = {
     if (!containerEl) return;
     const atividades = [];
     const emprestimos = [...DB.getEmprestimos()].sort((a, b) => new Date(`${b.data}T12:00:00`) - new Date(`${a.data}T12:00:00`));
-    emprestimos.slice(0, 4).forEach((e) => atividades.push({ icone: e.status === "devolvido" ? "↩" : "↗", titulo: e.status === "devolvido" ? "Livro devolvido" : "Novo empréstimo", texto: e.titulo, data: formatarDataISO(e.data) }));
+    emprestimos.slice(0, 4).forEach((e) => atividades.push({ icone: e.status === "devolvido" ? "↩" : e.status === "pendente" ? "⏳" : "↗", titulo: e.status === "devolvido" ? "Livro devolvido" : e.status === "pendente" ? "Devolução a conferir" : "Novo empréstimo", texto: e.titulo, data: formatarDataISO(e.data) }));
     [...DB.getLivros()].sort((a, b) => (b.criadoEm || 0) - (a.criadoEm || 0)).slice(0, 3).forEach((l) => atividades.push({ icone: "+", titulo: "Livro no acervo", texto: l.titulo, data: l.criadoEm ? formatarData(l.criadoEm) : "Agora" }));
     if (!atividades.length) {
       containerEl.innerHTML = '<div class="grafico-vazio">Ainda não há movimentações.</div>';
@@ -212,6 +212,7 @@ function renderDashboard() {
    ========================================================================= */
 function situacaoEmprestimo(e, hoje = dataLocalISO()) {
   if (e.status === "devolvido") return { chave: "devolvido", rotulo: "Devolvido", classe: "badge badge-disp" };
+  if (e.status === "pendente") return { chave: "pendente", rotulo: "Devolução a conferir", classe: "badge badge-pendente" };
   const dias = diasEntreISO(hoje, e.devolucao);
   if (dias < 0) return { chave: "atrasado", rotulo: `Atrasado há ${-dias} dia${dias === -1 ? "" : "s"}`, classe: "badge badge-indisp" };
   if (dias === 0) return { chave: "vencendo", rotulo: "Vence hoje", classe: "chip-chip" };
@@ -222,23 +223,27 @@ function situacaoEmprestimo(e, hoje = dataLocalISO()) {
 function renderAdminEmprestimos() {
   const hoje = dataLocalISO();
   const todos = DB.getEmprestimos().map((e) => ({ ...e, sit: situacaoEmprestimo(e, hoje) }));
-  const ativos = todos.filter((e) => e.status === "ativo");
+  const ativos = todos.filter((e) => e.status !== "devolvido");
   $("#ae-stat-ativos").textContent = ativos.length;
+  $("#ae-stat-pendentes").textContent = ativos.filter((e) => e.status === "pendente").length;
   $("#ae-stat-atrasados").textContent = ativos.filter((e) => e.sit.chave === "atrasado").length;
   $("#ae-stat-vencendo").textContent = ativos.filter((e) => e.sit.chave === "vencendo").length;
-  $("#ae-stat-devolvidos").textContent = todos.length - ativos.length;
+  $("#ae-stat-devolvidos").textContent = todos.filter((e) => e.status === "devolvido").length;
 
   const termo = normalizarTexto($("#ae-busca").value);
   const filtro = $("#ae-filtro").value;
   const passa = (e) => {
-    if (filtro === "ativos" && e.status !== "ativo") return false;
+    if (filtro === "ativos" && e.status === "devolvido") return false;
+    if (filtro === "pendentes" && e.status !== "pendente") return false;
     if (filtro === "devolvidos" && e.status !== "devolvido") return false;
     if (filtro === "atrasados" && e.sit.chave !== "atrasado") return false;
     if (filtro === "vencendo" && e.sit.chave !== "vencendo") return false;
     return !termo || [e.titulo, e.autor, e.nome, e.email].some((v) => normalizarTexto(v).includes(termo));
   };
   const lista = todos.filter(passa).sort((a, b) => {
-    if (a.status !== b.status) return a.status === "ativo" ? -1 : 1;
+    const peso = { pendente: 0, ativo: 1, devolvido: 2 };
+    if (a.status !== b.status) return peso[a.status] - peso[b.status];
+    if (a.status === "pendente") return (a.devolucaoInformadaEm || 0) - (b.devolucaoInformadaEm || 0);
     if (a.status === "ativo") return a.devolucao.localeCompare(b.devolucao) || a.id - b.id;
     return (b.devolvidoEm || 0) - (a.devolvidoEm || 0);
   });
@@ -249,9 +254,11 @@ function renderAdminEmprestimos() {
       <td data-label="Livro"><strong>${escapeHTML(e.titulo)}</strong><small class="linha-secundaria">${escapeHTML(e.autor)}</small></td>
       <td data-label="Leitor"><strong>${escapeHTML(e.nome || e.email)}</strong><small class="linha-secundaria">${escapeHTML(e.email)}${e.telefone ? " · " + escapeHTML(e.telefone) : ""}</small></td>
       <td data-label="Retirada">${formatarDataISO(e.data)}</td>
-      <td data-label="Devolução">${formatarDataISO(e.devolucao)}${e.devolvidoEm ? `<small class="linha-secundaria">devolvido em ${formatarData(e.devolvidoEm)}</small>` : ""}</td>
+      <td data-label="Devolução">${formatarDataISO(e.devolucao)}${e.devolvidoEm ? `<small class="linha-secundaria">devolvido em ${formatarData(e.devolvidoEm)}</small>` : ""}${e.status === "pendente" ? `<small class="linha-secundaria">leitor informou em ${formatarData(e.devolucaoInformadaEm)}</small>` : ""}</td>
       <td data-label="Situação"><span class="${e.sit.classe}">${escapeHTML(e.sit.rotulo)}</span></td>
-      <td>${e.status === "ativo" ? `<div class="col-acoes"><button class="btn-icone" data-ae-devolver="${e.id}" aria-label="Confirmar devolução de ${escapeHTML(e.titulo)}">Confirmar devolução</button></div>` : ""}</td>
+      <td>${e.status === "pendente"
+        ? `<div class="col-acoes"><button class="btn-icone" data-ae-devolver="${e.id}" aria-label="Confirmar recebimento de ${escapeHTML(e.titulo)}">Confirmar recebimento</button><button class="btn-icone btn-icone-perigo" data-ae-recusar="${e.id}" aria-label="Livro ${escapeHTML(e.titulo)} não recebido">Não recebi</button></div>`
+        : e.status === "ativo" ? `<div class="col-acoes"><button class="btn-icone" data-ae-devolver="${e.id}" aria-label="Registrar devolução de ${escapeHTML(e.titulo)}">Registrar devolução</button></div>` : ""}</td>
     </tr>`).join("")
     : `<tr><td colspan="6"><div class="tabela-vazia"><strong>Nenhum empréstimo encontrado</strong><span>Mude o filtro ou a busca.</span></div></td></tr>`;
 }
@@ -352,12 +359,28 @@ function initAdminExtras() {
   $("#ae-busca").addEventListener("input", renderAdminEmprestimos);
   $("#ae-filtro").addEventListener("change", renderAdminEmprestimos);
   $("#ae-corpo").addEventListener("click", async (ev) => {
+    const recusar = ev.target.closest("[data-ae-recusar]");
+    if (recusar) {
+      const idRec = Number(recusar.dataset.aeRecusar);
+      const empRec = DB.getEmprestimos().find((e) => e.id === idRec);
+      if (!empRec || empRec.status !== "pendente") return;
+      const okRec = await confirmar(`Você NÃO recebeu "${empRec.titulo}" de ${empRec.nome || empRec.email}? O empréstimo voltará a ficar ativo e o leitor será avisado.`, "Não recebi");
+      if (!okRec) return;
+      const resRec = DB.recusarDevolucao(idRec, Auth.getUser());
+      if (!resRec.ok) { toast(resRec.erro, "erro"); return; }
+      toast("Devolução recusada. O empréstimo continua ativo e o leitor foi avisado.");
+      renderAdminEmprestimos();
+      return;
+    }
     const btn = ev.target.closest("[data-ae-devolver]");
     if (!btn) return;
     const id = Number(btn.dataset.aeDevolver);
     const emp = DB.getEmprestimos().find((e) => e.id === id);
     if (!emp) return;
-    const ok = await confirmar(`Confirmar a devolução de "${emp.titulo}" por ${emp.nome || emp.email}?`, "Confirmar devolução");
+    const pergunta = emp.status === "pendente"
+      ? `Você recebeu "${emp.titulo}" de ${emp.nome || emp.email}? Ao confirmar, o exemplar volta ao acervo.`
+      : `Registrar a devolução de "${emp.titulo}" por ${emp.nome || emp.email}? Ao confirmar, o exemplar volta ao acervo.`;
+    const ok = await confirmar(pergunta, "Confirmar recebimento");
     if (!ok) return;
     const res = DB.devolver(id, Auth.getUser());
     if (!res.ok) { toast(res.erro, "erro"); return; }

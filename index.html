@@ -383,19 +383,21 @@
           <div class="stat-card"><span class="valor" id="ae-stat-ativos">0</span><span class="rotulo">Empréstimos ativos</span></div>
           <div class="stat-card"><span class="valor" id="ae-stat-atrasados">0</span><span class="rotulo">Atrasados</span></div>
           <div class="stat-card"><span class="valor" id="ae-stat-vencendo">0</span><span class="rotulo">Vencem em até 3 dias</span></div>
+          <div class="stat-card"><span class="valor" id="ae-stat-pendentes">0</span><span class="rotulo">Devoluções a conferir</span></div>
           <div class="stat-card"><span class="valor" id="ae-stat-devolvidos">0</span><span class="rotulo">Já devolvidos</span></div>
         </div>
         <div class="gerenciar-filtros" style="margin-top:22px;">
           <div class="gerenciar-busca"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg><input id="ae-busca" placeholder="Buscar por livro, leitor ou e-mail..." aria-label="Buscar empréstimos" /></div>
           <select id="ae-filtro" aria-label="Filtrar por situação">
-            <option value="ativos">Ativos</option>
+            <option value="ativos">Em aberto</option>
+            <option value="pendentes">Devolução a conferir</option>
             <option value="atrasados">Atrasados</option>
             <option value="vencendo">Vencem em até 3 dias</option>
             <option value="devolvidos">Devolvidos</option>
             <option value="todos">Todos</option>
           </select>
         </div>
-        <div class="gerenciar-meta"><span id="ae-contagem">0 empréstimos</span><span>Atrasados e mais próximos do vencimento aparecem primeiro</span></div>
+        <div class="gerenciar-meta"><span id="ae-contagem">0 empréstimos</span><span>Devoluções informadas pelos leitores aparecem primeiro; só o administrador confirma o recebimento</span></div>
         <div class="tabela-wrap">
           <table class="tabela tabela-cartoes">
             <thead><tr><th>Livro</th><th>Leitor</th><th>Retirada</th><th>Devolução</th><th>Situação</th><th>Ação</th></tr></thead>

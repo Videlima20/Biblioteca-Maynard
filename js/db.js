@@ -10,7 +10,7 @@
                     descricao, acessos, criadoEm, arquivado? }
      autores      { id, nome, anos, bio, citacao, destaque }
      emprestimos  { id, livroId, email, nome, telefone, data, devolucao,
-                    status, devolvidoEm? }
+                    status ("ativo"|"pendente"|"devolvido"), devolucaoInformadaEm?, devolvidoEm? }
      notificacoes { id, email, mensagem, detalhes, lida, criadoEm }
 
    O que é DERIVADO na leitura (nunca gravado, para não divergir):
@@ -133,7 +133,7 @@ const DB = {
     const nomes = new Map(this.getAutores().map((a) => [a.id, a.nome]));
     const ativos = new Map();
     this._ler(CHAVE.emprestimos).forEach((e) => {
-      if (e.status === "ativo") ativos.set(e.livroId, (ativos.get(e.livroId) || 0) + 1);
+      if (this.emAberto(e)) ativos.set(e.livroId, (ativos.get(e.livroId) || 0) + 1);
     });
     return brutos.map((l) => ({
       ...l,
@@ -193,7 +193,7 @@ const DB = {
     const livros = this._ler(CHAVE.livros);
     const idx = livros.findIndex((l) => l.id === id);
     if (idx === -1) return { ok: false, erro: "Livro não encontrado." };
-    const emprestados = this._ler(CHAVE.emprestimos).filter((e) => e.livroId === id && e.status === "ativo").length;
+    const emprestados = this._ler(CHAVE.emprestimos).filter((e) => e.livroId === id && this.emAberto(e)).length;
     const erro = this.validarLivro(d, emprestados);
     if (erro) return { ok: false, erro };
     const autores = this.getAutores();
@@ -217,7 +217,7 @@ const DB = {
   /* Remove o livro; se já houve empréstimos, apenas arquiva (preserva o histórico). */
   removerLivro(id) {
     const emprestimos = this._ler(CHAVE.emprestimos).filter((e) => e.livroId === id);
-    if (emprestimos.some((e) => e.status === "ativo")) {
+    if (emprestimos.some((e) => this.emAberto(e))) {
       return { ok: false, motivo: "Este livro possui um empréstimo ativo e não pode ser removido agora." };
     }
     const livros = this._ler(CHAVE.livros);
@@ -245,6 +245,13 @@ const DB = {
     });
   },
 
+  /* Situações: "ativo" (com o leitor), "pendente" (o leitor informou a devolução, mas a
+     biblioteca ainda não conferiu) e "devolvido" (confirmado pelo administrador).
+     Só "devolvido" libera o exemplar; "pendente" ainda conta como emprestado. */
+  emAberto(e) {
+    return e.status === "ativo" || e.status === "pendente";
+  },
+
   emAtraso(e) {
     return e.status === "ativo" && e.devolucao < dataLocalISO();
   },
@@ -258,7 +265,7 @@ const DB = {
     if (livro.qtdDisp <= 0) return { ok: false, erro: "Este livro ficou indisponível." };
 
     const lista = this._ler(CHAVE.emprestimos);
-    const doUsuario = lista.filter((e) => e.email === user.email && e.status === "ativo");
+    const doUsuario = lista.filter((e) => e.email === user.email && this.emAberto(e));
     if (doUsuario.some((e) => e.livroId === livroId)) return { ok: false, erro: "Você já possui este livro em empréstimo." };
     if (doUsuario.length >= LIMITES.maxEmprestimosAtivos) {
       return { ok: false, erro: `Limite de ${LIMITES.maxEmprestimosAtivos} empréstimos ativos atingido. Devolva um livro antes de pegar outro.` };
@@ -294,22 +301,63 @@ const DB = {
     return { ok: true, emprestimo: { ...emprestimo, titulo: livro.titulo, autor: livro.autor, categoria: livro.categoria } };
   },
 
-  /* Leitor devolve o próprio empréstimo; administrador devolve o de qualquer leitor.
-     `quem` = { email, tipo } da sessão. A notificação vai para o dono do empréstimo. */
+  /* Devolução em 3 etapas, para o administrador ter controle:
+     1) solicitarDevolucao — o LEITOR informa que devolveu. Fica "pendente"; o livro NÃO volta ao estoque.
+     2) devolver           — só o ADMIN confirma que recebeu o livro. Aí vira "devolvido".
+     3) recusarDevolucao   — o ADMIN diz que não recebeu: volta para "ativo" e o leitor é avisado.
+     `quem` = { email, tipo } da sessão. */
+  solicitarDevolucao(id, quem) {
+    const lista = this._ler(CHAVE.emprestimos);
+    const idx = lista.findIndex((e) => e.id === id);
+    if (idx === -1 || !quem || quem.email !== lista[idx].email) return { ok: false, erro: "Empréstimo não encontrado." };
+    const atual = lista[idx];
+    if (atual.status === "pendente") return { ok: false, erro: "A devolução já foi informada e aguarda a confirmação da biblioteca." };
+    if (atual.status !== "ativo") return { ok: false, erro: "Este empréstimo já foi devolvido." };
+    const devolucaoInformadaEm = Date.now();
+    lista[idx] = { ...atual, status: "pendente", devolucaoInformadaEm };
+    if (!this._gravar(CHAVE.emprestimos, lista)) return { ok: false, erro: "Não foi possível salvar a solicitação." };
+    const livro = this.getLivrosTodos().find((l) => l.id === atual.livroId);
+    const titulo = livro ? livro.titulo : "livro";
+    const detalhes = { tipo: "devolucao_informada", emprestimoId: id, livroId: atual.livroId, titulo, devolucaoInformadaEm };
+    this.addNotificacao(atual.email, `Devolução informada: "${titulo}". Aguardando a confirmação da biblioteca.`, detalhes);
+    this.getUsuarios().filter((u) => u.tipo === "admin" && u.email !== atual.email).forEach((adm) => {
+      this.addNotificacao(adm.email, `${atual.nome || atual.email} informou a devolução de "${titulo}". Confirme o recebimento em Controle de empréstimos.`, detalhes);
+    });
+    return { ok: true };
+  },
+
+  /* Confirmação do recebimento: exclusiva do administrador. */
   devolver(id, quem) {
+    if (!quem || quem.tipo !== "admin") return { ok: false, erro: "Somente a biblioteca pode confirmar uma devolução." };
     const lista = this._ler(CHAVE.emprestimos);
     const idx = lista.findIndex((e) => e.id === id);
     if (idx === -1) return { ok: false, erro: "Empréstimo não encontrado." };
+    if (lista[idx].status === "devolvido") return { ok: false, erro: "Este empréstimo já foi devolvido." };
     const dono = lista[idx].email;
-    if (!quem || (quem.tipo !== "admin" && quem.email !== dono)) return { ok: false, erro: "Empréstimo não encontrado." };
-    if (lista[idx].status !== "ativo") return { ok: false, erro: "Este empréstimo já foi devolvido." };
     const devolvidoEm = Date.now();
     lista[idx] = { ...lista[idx], status: "devolvido", devolvidoEm };
     if (!this._gravar(CHAVE.emprestimos, lista)) return { ok: false, erro: "Não foi possível salvar a devolução." };
     const livro = this.getLivrosTodos().find((l) => l.id === lista[idx].livroId);
-    const porBiblioteca = quem.tipo === "admin" && quem.email !== dono;
-    this.addNotificacao(dono, `Devolução ${porBiblioteca ? "confirmada pela biblioteca" : "registrada"}: "${livro ? livro.titulo : "livro"}".`, {
+    this.addNotificacao(dono, `Devolução confirmada pela biblioteca: "${livro ? livro.titulo : "livro"}".`, {
       tipo: "devolucao", emprestimoId: id, livroId: lista[idx].livroId, titulo: livro ? livro.titulo : "", devolvidoEm,
+    });
+    return { ok: true };
+  },
+
+  /* O administrador não recebeu o livro: o empréstimo volta a ficar ativo. */
+  recusarDevolucao(id, quem) {
+    if (!quem || quem.tipo !== "admin") return { ok: false, erro: "Somente a biblioteca pode recusar uma devolução." };
+    const lista = this._ler(CHAVE.emprestimos);
+    const idx = lista.findIndex((e) => e.id === id);
+    if (idx === -1) return { ok: false, erro: "Empréstimo não encontrado." };
+    if (lista[idx].status !== "pendente") return { ok: false, erro: "Não há devolução informada para este empréstimo." };
+    const { devolucaoInformadaEm, ...resto } = lista[idx];
+    lista[idx] = { ...resto, status: "ativo" };
+    if (!this._gravar(CHAVE.emprestimos, lista)) return { ok: false, erro: "Não foi possível salvar a recusa." };
+    const livro = this.getLivrosTodos().find((l) => l.id === lista[idx].livroId);
+    const titulo = livro ? livro.titulo : "livro";
+    this.addNotificacao(lista[idx].email, `A biblioteca não localizou a devolução de "${titulo}". O empréstimo continua ativo; procure a biblioteca.`, {
+      tipo: "devolucao_recusada", emprestimoId: id, livroId: lista[idx].livroId, titulo,
     });
     return { ok: true };
   },
@@ -358,7 +406,7 @@ const DB = {
     const emprestimos = this._ler(CHAVE.emprestimos);
     return this.getUsuarios().map(({ senha, ...u }) => {
       const meus = emprestimos.filter((e) => e.email === u.email);
-      const ativos = meus.filter((e) => e.status === "ativo");
+      const ativos = meus.filter((e) => this.emAberto(e));
       return { ...u, ativos: ativos.length, total: meus.length, atrasados: ativos.filter((e) => this.emAtraso(e)).length };
     });
   },
@@ -386,7 +434,7 @@ const DB = {
     const usuarios = this.getUsuarios();
     const alvo = usuarios.find((u) => u.email === email);
     if (!alvo) return { ok: false, erro: "Usuário não encontrado." };
-    if (this._ler(CHAVE.emprestimos).some((e) => e.email === email && e.status === "ativo")) {
+    if (this._ler(CHAVE.emprestimos).some((e) => e.email === email && this.emAberto(e))) {
       return { ok: false, erro: "Este usuário tem empréstimo ativo. Registre a devolução antes de excluir a conta." };
     }
     if (alvo.tipo === "admin" && this._outrosAdmins(usuarios, email) === 0) return { ok: false, erro: "Precisa existir pelo menos um administrador." };
@@ -470,16 +518,17 @@ const DB = {
       id: e?.id, livroId: e?.livroId, email: txt(e?.email).toLowerCase(), nome: txt(e?.nome), telefone: txt(e?.telefone),
       data: txt(e?.data), devolucao: txt(e?.devolucao), status: e?.status,
       ...(e?.devolvidoEm !== undefined ? { devolvidoEm: Number(e.devolvidoEm) || 0 } : {}),
+      ...(e?.devolucaoInformadaEm !== undefined ? { devolucaoInformadaEm: Number(e.devolucaoInformadaEm) || 0 } : {}),
     }));
     emprestimos.forEach((e) => {
       if (!inteiro(e.id) || e.id < 1) falha("Empréstimo com id inválido.");
       if (!idsLivro.has(e.livroId)) falha(`Empréstimo ${e.id}: livro inexistente.`);
       if (!dataISO.test(e.data) || !dataISO.test(e.devolucao)) falha(`Empréstimo ${e.id}: datas inválidas.`);
-      if (!["ativo", "devolvido"].includes(e.status)) falha(`Empréstimo ${e.id}: situação inválida.`);
+      if (!["ativo", "pendente", "devolvido"].includes(e.status)) falha(`Empréstimo ${e.id}: situação inválida.`);
     });
     unicos(emprestimos, "id", "Empréstimo");
     const ativos = new Map(); const pares = new Set();
-    emprestimos.filter((e) => e.status === "ativo").forEach((e) => {
+    emprestimos.filter((e) => e.status !== "devolvido").forEach((e) => {
       ativos.set(e.livroId, (ativos.get(e.livroId) || 0) + 1);
       const par = `${e.email}|${e.livroId}`;
       if (pares.has(par)) falha(`${e.email} tem o mesmo livro emprestado duas vezes.`);
@@ -575,7 +624,7 @@ const DB = {
 
     // qtdTotal nunca pode ficar abaixo dos empréstimos ativos (o estoque agora é derivado).
     novosLivros.forEach((l) => {
-      const ativos = novosEmprestimos.filter((e) => e.livroId === l.id && e.status === "ativo").length;
+      const ativos = novosEmprestimos.filter((e) => e.livroId === l.id && this.emAberto(e)).length;
       if (ativos > l.qtdTotal) l.qtdTotal = ativos;
     });
 
