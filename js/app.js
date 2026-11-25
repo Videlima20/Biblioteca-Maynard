@@ -714,7 +714,7 @@ function ativarModais() {
       return;
     }
     fecharModal("modal-emprestimo");
-    toast("Empréstimo registrado com sucesso.");
+    toast("Solicitação enviada. Aguarde a confirmação da biblioteca.");
     renderCatalogo(); renderMaisAcessados(); renderNotificacoes(); renderEmprestimos();
   });
 }
@@ -907,10 +907,12 @@ function renderEmprestimos() {
       const atrasado = DB.emAtraso(e);
       const devolvido = e.status === "devolvido";
       const pendente = e.status === "pendente";
+      const solicitacao = e.status === "solicitacao";
+      const recusado = e.status === "recusado";
       return `<article class="emprestimo-item ${atrasado ? "atrasado" : ""} ${devolvido ? "devolvido" : ""}">
         <div class="emprestimo-capa">${renderCoverHTML({ titulo: e.titulo, autor: e.autor || "", categoria: e.categoria || "romance" })}</div>
-        <div class="emprestimo-dados"><div class="emprestimo-kicker">${devolvido ? "Histórico" : pendente ? "Devolução informada" : "Empréstimo ativo"}</div><strong>${escapeHTML(e.titulo)}</strong><span>${escapeHTML(e.autor || "Livro do acervo")}</span><small>Emprestado em ${formatarDataISO(e.data)} · devolução ${formatarDataISO(e.devolucao)}${e.devolvidoEm ? ` · devolvido em ${formatarData(e.devolvidoEm)}` : ""}${pendente ? ` · informada em ${formatarData(e.devolucaoInformadaEm)}. A biblioteca ainda vai conferir o livro` : ""}</small></div>
-        <div class="emprestimo-acao"><span class="badge ${devolvido ? "badge-disp" : pendente ? "badge-pendente" : atrasado ? "badge-indisp" : "badge-disp"}">${devolvido ? "Devolvido" : pendente ? "Aguardando confirmação" : atrasado ? "Atrasado" : "Em dia"}</span>${e.status === "ativo" ? `<button type="button" class="btn btn-secundario btn-pequeno" data-devolver="${e.id}">Informar devolução</button>` : ""}</div>
+        <div class="emprestimo-dados"><div class="emprestimo-kicker">${devolvido ? "Histórico" : solicitacao ? "Solicitação de empréstimo" : recusado ? "Solicitação recusada" : pendente ? "Devolução informada" : "Empréstimo ativo"}</div><strong>${escapeHTML(e.titulo)}</strong><span>${escapeHTML(e.autor || "Livro do acervo")}</span><small>Emprestado em ${formatarDataISO(e.data)} · devolução ${formatarDataISO(e.devolucao)}${e.devolvidoEm ? ` · devolvido em ${formatarData(e.devolvidoEm)}` : ""}${solicitacao ? ` · solicitada em ${formatarData(e.solicitadoEm)}. Aguardando confirmação da biblioteca` : ""}${pendente ? ` · informada em ${formatarData(e.devolucaoInformadaEm)}. A biblioteca ainda vai conferir o livro` : ""}${recusado ? ` · recusada em ${formatarData(e.recusadoEm)}` : ""}</small></div>
+        <div class="emprestimo-acao"><span class="badge ${devolvido ? "badge-disp" : pendente ? "badge-pendente" : atrasado ? "badge-indisp" : "badge-disp"}">${devolvido ? "Devolvido" : solicitacao ? "Empréstimo aguardando" : recusado ? "Solicitação recusada" : pendente ? "Devolução aguardando" : atrasado ? "Atrasado" : "Em dia"}</span>${e.status === "ativo" ? `<button type="button" class="btn btn-secundario btn-pequeno" data-devolver="${e.id}">Informar devolução</button>` : ""}</div>
       </article>`;
     }).join("") : `<div class="estado-vazio estado-vazio-card"><span class="estado-vazio-icon">▱</span><strong>Nenhum empréstimo registrado</strong><p>Explore o catálogo para encontrar seu próximo livro.</p><button type="button" class="btn btn-primario" data-view-target="livros">Explorar catálogo</button></div>`}`;
 

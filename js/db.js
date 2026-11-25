@@ -10,7 +10,7 @@
                     descricao, acessos, criadoEm, arquivado? }
      autores      { id, nome, anos, bio, citacao, destaque }
      emprestimos  { id, livroId, email, nome, telefone, data, devolucao,
-                    status ("ativo"|"pendente"|"devolvido"), devolucaoInformadaEm?, devolvidoEm? }
+                    status ("solicitacao"|"ativo"|"pendente"|"recusado"|"devolvido"), solicitadoEm?, devolucaoInformadaEm?, devolvidoEm? }
      notificacoes { id, email, mensagem, detalhes, lida, criadoEm }
 
    O que é DERIVADO na leitura (nunca gravado, para não divergir):
@@ -249,16 +249,15 @@ const DB = {
      biblioteca ainda não conferiu) e "devolvido" (confirmado pelo administrador).
      Só "devolvido" libera o exemplar; "pendente" ainda conta como emprestado. */
   emAberto(e) {
-    return e.status === "ativo" || e.status === "pendente";
+    return e.status === "solicitacao" || e.status === "ativo" || e.status === "pendente";
   },
 
   emAtraso(e) {
     return e.status === "ativo" && e.devolucao < dataLocalISO();
   },
 
-  /* Valida e registra um empréstimo de uma só vez. O estoque é derivado dos
-     empréstimos, então não existe mais uma segunda gravação que possa
-     falhar e deixar o acervo inconsistente. */
+  /* Registra a solicitação de empréstimo. Ela reserva o exemplar, mas só
+     se torna empréstimo efetivo após a confirmação administrativa. */
   emprestar({ livroId, user, nome, telefone, data, devolucao }) {
     const livro = this.getLivros().find((l) => l.id === livroId);
     if (!livro) return { ok: false, erro: "Livro não encontrado no acervo." };
@@ -289,16 +288,44 @@ const DB = {
       telefone: String(telefone || "").trim(),
       data,
       devolucao,
-      status: "ativo",
+      status: "solicitacao",
+      solicitadoEm: Date.now(),
     };
     lista.push(emprestimo);
     if (!this._gravar(CHAVE.emprestimos, lista)) {
       return { ok: false, erro: "Não foi possível salvar: o armazenamento do navegador está cheio." };
     }
-    this.addNotificacao(user.email, `Empréstimo registrado: "${livro.titulo}".`, {
-      tipo: "emprestimo", emprestimoId: emprestimo.id, livroId, titulo: livro.titulo, autor: livro.autor, data, devolucao,
+    this.addNotificacao(user.email, `Solicitação de empréstimo enviada: "${livro.titulo}". Aguarde a confirmação da biblioteca.`, {
+      tipo: "emprestimo_solicitado", emprestimoId: emprestimo.id, livroId, titulo: livro.titulo, autor: livro.autor, data, devolucao,
+    });
+    this.getUsuarios().filter((u) => u.tipo === "admin" && u.email !== user.email).forEach((adm) => {
+      this.addNotificacao(adm.email, `${nomeLimpo} solicitou o empréstimo de "${livro.titulo}".`, { tipo: "emprestimo_solicitado", emprestimoId: emprestimo.id, livroId, titulo: livro.titulo });
     });
     return { ok: true, emprestimo: { ...emprestimo, titulo: livro.titulo, autor: livro.autor, categoria: livro.categoria } };
+  },
+
+  /* Confirma ou recusa solicitação de empréstimo, exclusivamente admin. */
+  confirmarEmprestimo(id, quem) {
+    if (!quem || quem.tipo !== "admin") return { ok: false, erro: "Somente a biblioteca pode confirmar empréstimos." };
+    const lista = this._ler(CHAVE.emprestimos), idx = lista.findIndex((e) => e.id === id);
+    if (idx < 0 || lista[idx].status !== "solicitacao") return { ok: false, erro: "Solicitação não encontrada ou já processada." };
+    const atual = lista[idx], hoje = dataLocalISO();
+    lista[idx] = { ...atual, status: "ativo", data: hoje, confirmadoEm: Date.now(), devolucao: atual.devolucao > hoje ? atual.devolucao : somarDiasISO(hoje, LIMITES.prazoPadraoDias) };
+    if (!this._gravar(CHAVE.emprestimos, lista)) return { ok: false, erro: "Não foi possível confirmar o empréstimo." };
+    const livro = this.getLivrosTodos().find((l) => l.id === atual.livroId), titulo = livro ? livro.titulo : "livro";
+    this.addNotificacao(atual.email, `Empréstimo confirmado pela biblioteca: "${titulo}".`, { tipo: "emprestimo", emprestimoId: id, livroId: atual.livroId, titulo, data: lista[idx].data, devolucao: lista[idx].devolucao });
+    return { ok: true };
+  },
+
+  recusarEmprestimo(id, quem) {
+    if (!quem || quem.tipo !== "admin") return { ok: false, erro: "Somente a biblioteca pode recusar empréstimos." };
+    const lista = this._ler(CHAVE.emprestimos), idx = lista.findIndex((e) => e.id === id);
+    if (idx < 0 || lista[idx].status !== "solicitacao") return { ok: false, erro: "Solicitação não encontrada ou já processada." };
+    const atual = lista[idx]; lista[idx] = { ...atual, status: "recusado", recusadoEm: Date.now() };
+    if (!this._gravar(CHAVE.emprestimos, lista)) return { ok: false, erro: "Não foi possível recusar a solicitação." };
+    const livro = this.getLivrosTodos().find((l) => l.id === atual.livroId), titulo = livro ? livro.titulo : "livro";
+    this.addNotificacao(atual.email, `A biblioteca recusou a solicitação de empréstimo de "${titulo}".`, { tipo: "emprestimo_recusado", emprestimoId: id, livroId: atual.livroId, titulo });
+    return { ok: true };
   },
 
   /* Devolução em 3 etapas, para o administrador ter controle:

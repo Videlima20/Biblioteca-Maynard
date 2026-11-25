@@ -211,6 +211,8 @@ function renderDashboard() {
    Controle de empréstimos (bibliotecário)
    ========================================================================= */
 function situacaoEmprestimo(e, hoje = dataLocalISO()) {
+  if (e.status === "solicitacao") return { chave: "solicitacao", rotulo: "Empréstimo aguardando confirmação", classe: "badge badge-pendente" };
+  if (e.status === "recusado") return { chave: "recusado", rotulo: "Solicitação recusada", classe: "badge badge-indisp" };
   if (e.status === "devolvido") return { chave: "devolvido", rotulo: "Devolvido", classe: "badge badge-disp" };
   if (e.status === "pendente") return { chave: "pendente", rotulo: "Devolução a conferir", classe: "badge badge-pendente" };
   const dias = diasEntreISO(hoje, e.devolucao);
@@ -223,9 +225,9 @@ function situacaoEmprestimo(e, hoje = dataLocalISO()) {
 function renderAdminEmprestimos() {
   const hoje = dataLocalISO();
   const todos = DB.getEmprestimos().map((e) => ({ ...e, sit: situacaoEmprestimo(e, hoje) }));
-  const ativos = todos.filter((e) => e.status !== "devolvido");
+  const ativos = todos.filter((e) => e.status === "ativo" || e.status === "pendente" || e.status === "solicitacao");
   $("#ae-stat-ativos").textContent = ativos.length;
-  $("#ae-stat-pendentes").textContent = ativos.filter((e) => e.status === "pendente").length;
+  $("#ae-stat-pendentes").textContent = ativos.filter((e) => e.status === "pendente" || e.status === "solicitacao").length;
   $("#ae-stat-atrasados").textContent = ativos.filter((e) => e.sit.chave === "atrasado").length;
   $("#ae-stat-vencendo").textContent = ativos.filter((e) => e.sit.chave === "vencendo").length;
   $("#ae-stat-devolvidos").textContent = todos.filter((e) => e.status === "devolvido").length;
@@ -233,16 +235,17 @@ function renderAdminEmprestimos() {
   const termo = normalizarTexto($("#ae-busca").value);
   const filtro = $("#ae-filtro").value;
   const passa = (e) => {
-    if (filtro === "ativos" && e.status === "devolvido") return false;
-    if (filtro === "pendentes" && e.status !== "pendente") return false;
+    if (filtro === "ativos" && (e.status === "devolvido" || e.status === "recusado")) return false;
+    if (filtro === "pendentes" && e.status !== "pendente" && e.status !== "solicitacao") return false;
     if (filtro === "devolvidos" && e.status !== "devolvido") return false;
     if (filtro === "atrasados" && e.sit.chave !== "atrasado") return false;
     if (filtro === "vencendo" && e.sit.chave !== "vencendo") return false;
     return !termo || [e.titulo, e.autor, e.nome, e.email].some((v) => normalizarTexto(v).includes(termo));
   };
   const lista = todos.filter(passa).sort((a, b) => {
-    const peso = { pendente: 0, ativo: 1, devolvido: 2 };
+    const peso = { solicitacao: 0, pendente: 1, ativo: 2, recusado: 3, devolvido: 4 };
     if (a.status !== b.status) return peso[a.status] - peso[b.status];
+    if (a.status === "solicitacao") return (a.solicitadoEm || 0) - (b.solicitadoEm || 0);
     if (a.status === "pendente") return (a.devolucaoInformadaEm || 0) - (b.devolucaoInformadaEm || 0);
     if (a.status === "ativo") return a.devolucao.localeCompare(b.devolucao) || a.id - b.id;
     return (b.devolvidoEm || 0) - (a.devolvidoEm || 0);
@@ -254,11 +257,12 @@ function renderAdminEmprestimos() {
       <td data-label="Livro"><strong>${escapeHTML(e.titulo)}</strong><small class="linha-secundaria">${escapeHTML(e.autor)}</small></td>
       <td data-label="Leitor"><strong>${escapeHTML(e.nome || e.email)}</strong><small class="linha-secundaria">${escapeHTML(e.email)}${e.telefone ? " · " + escapeHTML(e.telefone) : ""}</small></td>
       <td data-label="Retirada">${formatarDataISO(e.data)}</td>
-      <td data-label="Devolução">${formatarDataISO(e.devolucao)}${e.devolvidoEm ? `<small class="linha-secundaria">devolvido em ${formatarData(e.devolvidoEm)}</small>` : ""}${e.status === "pendente" ? `<small class="linha-secundaria">leitor informou em ${formatarData(e.devolucaoInformadaEm)}</small>` : ""}</td>
+      <td data-label="Devolução">${formatarDataISO(e.devolucao)}${e.devolvidoEm ? `<small class="linha-secundaria">devolvido em ${formatarData(e.devolvidoEm)}</small>` : ""}${e.status === "solicitacao" ? `<small class="linha-secundaria">solicitado em ${formatarData(e.solicitadoEm)}</small>` : e.status === "pendente" ? `<small class="linha-secundaria">leitor informou em ${formatarData(e.devolucaoInformadaEm)}</small>` : ""}</td>
       <td data-label="Situação"><span class="${e.sit.classe}">${escapeHTML(e.sit.rotulo)}</span></td>
-      <td>${e.status === "pendente"
-        ? `<div class="col-acoes"><button class="btn-icone" data-ae-devolver="${e.id}" aria-label="Confirmar recebimento de ${escapeHTML(e.titulo)}">Confirmar recebimento</button><button class="btn-icone btn-icone-perigo" data-ae-recusar="${e.id}" aria-label="Livro ${escapeHTML(e.titulo)} não recebido">Não recebi</button></div>`
-        : e.status === "ativo" ? `<div class="col-acoes"><button class="btn-icone" data-ae-devolver="${e.id}" aria-label="Registrar devolução de ${escapeHTML(e.titulo)}">Registrar devolução</button></div>` : ""}</td>
+      <td>${e.status === "solicitacao"
+        ? `<div class="col-acoes"><button class="btn-icone" data-ae-emprestimo-confirmar="${e.id}">Confirmar empréstimo</button><button class="btn-icone btn-icone-perigo" data-ae-emprestimo-recusar="${e.id}">Recusar</button></div>`
+        : e.status === "pendente" ? `<div class="col-acoes"><button class="btn-icone" data-ae-devolver="${e.id}">Confirmar recebimento</button><button class="btn-icone btn-icone-perigo" data-ae-recusar="${e.id}">Não recebi</button></div>`
+        : e.status === "ativo" ? `<div class="col-acoes"><button class="btn-icone" data-ae-devolver="${e.id}">Registrar devolução</button></div>` : ""}</td>
     </tr>`).join("")
     : `<tr><td colspan="6"><div class="tabela-vazia"><strong>Nenhum empréstimo encontrado</strong><span>Mude o filtro ou a busca.</span></div></td></tr>`;
 }
@@ -359,6 +363,22 @@ function initAdminExtras() {
   $("#ae-busca").addEventListener("input", renderAdminEmprestimos);
   $("#ae-filtro").addEventListener("change", renderAdminEmprestimos);
   $("#ae-corpo").addEventListener("click", async (ev) => {
+    const confirmarEmp = ev.target.closest("[data-ae-emprestimo-confirmar]");
+    if (confirmarEmp) {
+      const id = Number(confirmarEmp.dataset.aeEmprestimoConfirmar), emp = DB.getEmprestimos().find(e => e.id === id);
+      if (!emp || emp.status !== "solicitacao") return;
+      if (!(await confirmar(`Confirmar que "${emp.titulo}" foi entregue a ${emp.nome || emp.email}?`, "Confirmar empréstimo"))) return;
+      const result = DB.confirmarEmprestimo(id, Auth.getUser()); if (!result.ok) { toast(result.erro, "erro"); return; }
+      toast("Empréstimo confirmado e registrado."); renderAdminEmprestimos(); renderCatalogo(); renderNotificacoes(); return;
+    }
+    const recusarEmp = ev.target.closest("[data-ae-emprestimo-recusar]");
+    if (recusarEmp) {
+      const id = Number(recusarEmp.dataset.aeEmprestimoRecusar), emp = DB.getEmprestimos().find(e => e.id === id);
+      if (!emp || emp.status !== "solicitacao") return;
+      if (!(await confirmar(`Recusar a solicitação de "${emp.titulo}" de ${emp.nome || emp.email}?`, "Recusar empréstimo"))) return;
+      const result = DB.recusarEmprestimo(id, Auth.getUser()); if (!result.ok) { toast(result.erro, "erro"); return; }
+      toast("Solicitação recusada. O exemplar foi liberado."); renderAdminEmprestimos(); renderCatalogo(); renderNotificacoes(); return;
+    }
     const recusar = ev.target.closest("[data-ae-recusar]");
     if (recusar) {
       const idRec = Number(recusar.dataset.aeRecusar);
