@@ -46,7 +46,7 @@
         <svg class="nav-icone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="3.2"/><ellipse cx="12" cy="12" rx="9" ry="4"/></svg>
         Autores
       </button>
-      <button class="nav-item" data-view-target="inicio" data-nav-key="categorias" data-anchor="secao-categorias">
+      <button class="nav-item" data-view-target="categorias">
         <svg class="nav-icone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="8" height="8" rx="2"/><rect x="13" y="3" width="8" height="8" rx="2"/><rect x="3" y="13" width="8" height="8" rx="2"/><rect x="13" y="13" width="8" height="8" rx="2"/></svg>
         Categorias
       </button>
@@ -150,16 +150,6 @@
         <div class="home-insight"><span class="home-insight-icon">03</span><div><strong>Busca rápida</strong><span>Encontre o que procura em segundos</span></div></div>
       </div>
 
-      <div id="secao-categorias" class="secao">
-        <div class="secao-cabecalho">
-          <div>
-            <span class="secao-eyebrow">Navegue pelo gênero</span>
-            <h2 class="secao-titulo">Explore por categoria</h2>
-          </div>
-        </div>
-        <div id="grid-categorias" class="grid-categorias"></div>
-      </div>
-
       <div id="orbita-secao" class="secao orbita-secao">
         <div class="secao-cabecalho">
           <div>
@@ -205,13 +195,35 @@
       </div>
     </section>
 
-    <!-- ========== VIEW: LIVROS ========== -->
-    <section id="view-livros" class="view">
+    <!-- ========== VIEW: CATEGORIAS ========== -->
+    <section id="view-categorias" class="view">
       <div class="secao" style="margin-top:36px;">
         <div class="secao-cabecalho">
           <div>
-            <span class="secao-eyebrow">Acervo completo</span>
-            <h2 class="secao-titulo">Livros</h2>
+            <span class="secao-eyebrow">Navegue pelo gênero</span>
+            <h2 class="secao-titulo">Categorias</h2>
+            <p class="secao-sub">Escolha uma categoria para ver os livros do acervo.</p>
+          </div>
+          <div class="catalogo-filtros">
+            <select id="ordem-categorias" aria-label="Ordenar categorias">
+              <option value="padrao">Ordem padrão</option>
+              <option value="az">A–Z</option>
+              <option value="mais">Mais livros</option>
+            </select>
+          </div>
+        </div>
+        <div id="grid-categorias" class="grid-categorias"></div>
+      </div>
+    </section>
+
+    <!-- ========== VIEW: LIVROS ========== -->
+    <section id="view-livros" class="view">
+      <div class="secao" style="margin-top:36px;">
+        <button id="btn-voltar-categorias" class="btn btn-secundario btn-pequeno" type="button" style="display:none;margin-bottom:16px;">← Voltar às categorias</button>
+        <div class="secao-cabecalho">
+          <div>
+            <span class="secao-eyebrow" id="livros-eyebrow">Acervo completo</span>
+            <h2 class="secao-titulo" id="livros-titulo">Livros</h2>
             <p class="secao-sub" id="livros-contagem"></p>
           </div>
           <div class="catalogo-filtros">
@@ -230,6 +242,7 @@
             <button id="btn-limpar-filtros" class="btn btn-secundario btn-filtro-limpar" type="button">Limpar filtros</button>
           </div>
         </div>
+        <div id="chips-categorias" class="chips-categorias" role="group" aria-label="Categorias"></div>
         <div id="grid-livros" class="grid-livros"></div>
       </div>
     </section>
