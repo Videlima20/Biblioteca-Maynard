@@ -1,0 +1,491 @@
+{
+  "autores": [
+    {
+      "id": "machado-de-assis",
+      "nome": "Machado de Assis",
+      "wiki": "Machado de Assis",
+      "anos": "1839 — 1908",
+      "bio": "Fundador da Academia Brasileira de Letras, é considerado o maior nome da literatura brasileira, mestre da ironia e do narrador não confiável.",
+      "citacao": "Um dos grandes nomes da literatura brasileira.",
+      "destaque": true
+    },
+    {
+      "id": "clarice-lispector",
+      "nome": "Clarice Lispector",
+      "wiki": "Clarice Lispector",
+      "anos": "1920 — 1977",
+      "bio": "Romancista e contista, revolucionou a prosa brasileira com uma escrita introspectiva e epifânica sobre a existência.",
+      "citacao": "A vida se manifesta através de pequenas epifanias.",
+      "destaque": true
+    },
+    {
+      "id": "carlos-drummond-de-andrade",
+      "nome": "Carlos Drummond de Andrade",
+      "wiki": "Carlos Drummond de Andrade",
+      "anos": "1902 — 1987",
+      "bio": "Poeta de Itabira, um dos nomes centrais da poesia brasileira do século XX, entre o lirismo e a ironia social.",
+      "citacao": "No meio do caminho tinha uma pedra.",
+      "destaque": true
+    },
+    {
+      "id": "cecilia-meireles",
+      "nome": "Cecília Meireles",
+      "wiki": "Cecília Meireles",
+      "anos": "1901 — 1964",
+      "bio": "Poeta e educadora, autora de 'Romanceiro da Inconfidência', com uma obra marcada pela musicalidade dos versos.",
+      "citacao": "Livre é quem não teme perder-se.",
+      "destaque": true
+    },
+    {
+      "id": "jorge-amado",
+      "nome": "Jorge Amado",
+      "wiki": "Jorge Amado",
+      "anos": "1912 — 2001",
+      "bio": "Romancista baiano, retratou o povo e a cultura da Bahia com humor e sensualidade em obras traduzidas mundialmente.",
+      "citacao": "A literatura é a fala do povo.",
+      "destaque": true
+    },
+    {
+      "id": "monteiro-lobato",
+      "nome": "Monteiro Lobato",
+      "wiki": "Monteiro Lobato",
+      "anos": "1882 — 1948",
+      "bio": "Criador do Sítio do Picapau Amarelo, fundador da literatura infantil brasileira moderna.",
+      "citacao": "Um país se faz com homens e livros.",
+      "destaque": true
+    },
+    {
+      "id": "marina-silva",
+      "nome": "Marina Silva",
+      "anos": "",
+      "bio": "",
+      "citacao": "",
+      "destaque": false
+    },
+    {
+      "id": "renato-cabral",
+      "nome": "Renato Cabral",
+      "anos": "",
+      "bio": "",
+      "citacao": "",
+      "destaque": false
+    },
+    {
+      "id": "beatriz-nogueira",
+      "nome": "Beatriz Nogueira",
+      "anos": "",
+      "bio": "",
+      "citacao": "",
+      "destaque": false
+    },
+    {
+      "id": "eduardo-prado",
+      "nome": "Eduardo Prado",
+      "anos": "",
+      "bio": "",
+      "citacao": "",
+      "destaque": false
+    },
+    {
+      "id": "helena-duarte",
+      "nome": "Helena Duarte",
+      "anos": "",
+      "bio": "",
+      "citacao": "",
+      "destaque": false
+    },
+    {
+      "id": "rafael-torres",
+      "nome": "Rafael Torres",
+      "anos": "",
+      "bio": "",
+      "citacao": "",
+      "destaque": false
+    }
+  ],
+  "categorias": [
+    {
+      "id": "romance",
+      "nome": "Romance",
+      "desc": "Histórias de laços, perdas e reencontros."
+    },
+    {
+      "id": "conto",
+      "nome": "Conto",
+      "desc": "Narrativas curtas, de impacto imediato."
+    },
+    {
+      "id": "novela",
+      "nome": "Novela",
+      "desc": "Entre o conto e o romance, no ritmo certo."
+    },
+    {
+      "id": "teatro",
+      "nome": "Teatro",
+      "desc": "Textos escritos para o palco e a voz."
+    },
+    {
+      "id": "ensaios",
+      "nome": "Ensaios",
+      "desc": "Reflexão e argumento em prosa livre."
+    },
+    {
+      "id": "poema",
+      "nome": "Poema",
+      "desc": "A linguagem levada ao osso."
+    },
+    {
+      "id": "texto",
+      "nome": "Texto",
+      "desc": "Textos diversos para leitura e estudo."
+    },
+    {
+      "id": "diario",
+      "nome": "Diário",
+      "desc": "Registros do cotidiano e da memória."
+    },
+    {
+      "id": "biografia",
+      "nome": "Biografia",
+      "desc": "Vidas contadas, décadas revisitadas."
+    }
+  ],
+  "livros": [
+    {
+      "id": 1,
+      "acessos": 43,
+      "criadoEm": 1793389177305,
+      "titulo": "O Jardim das Estrelas",
+      "editora": "Biblioteca Escolar",
+      "ano": 2024,
+      "categoria": "romance",
+      "qtdTotal": 6,
+      "descricao": "Uma jovem astrônoma descobre, num jardim esquecido, cartas que ligam sua família a um observatório abandonado — e a um segredo guardado por três gerações.",
+      "autorId": "marina-silva"
+    },
+    {
+      "id": 2,
+      "acessos": 48,
+      "criadoEm": 1793389177305,
+      "titulo": "Depois da Chuva",
+      "editora": "Editora Alameda",
+      "ano": 2023,
+      "categoria": "conto",
+      "qtdTotal": 5,
+      "descricao": "Oito contos sobre recomeços, ambientados em uma cidade litorânea logo após uma tempestade que muda a rotina de seus moradores.",
+      "autorId": "renato-cabral"
+    },
+    {
+      "id": 3,
+      "acessos": 38,
+      "criadoEm": 1793389177305,
+      "titulo": "A Última Página",
+      "editora": "Editora Alameda",
+      "ano": 2022,
+      "categoria": "novela",
+      "qtdTotal": 4,
+      "descricao": "Uma restauradora de livros antigos encontra, na última página de um exemplar raro, uma dedicatória que não deveria existir.",
+      "autorId": "beatriz-nogueira"
+    },
+    {
+      "id": 4,
+      "acessos": 68,
+      "criadoEm": 1793389177305,
+      "titulo": "Caminhos do Tempo",
+      "editora": "Biblioteca Escolar",
+      "ano": 2021,
+      "categoria": "romance",
+      "qtdTotal": 7,
+      "descricao": "Três linhas do tempo se cruzam na mesma casa de campo, contadas por moradores que nunca se conheceram — mas dividiram o mesmo endereço.",
+      "autorId": "eduardo-prado"
+    },
+    {
+      "id": 5,
+      "acessos": 27,
+      "criadoEm": 1793389177305,
+      "titulo": "O Segredo da Floresta",
+      "editora": "Editora Alameda",
+      "ano": 2020,
+      "categoria": "novela",
+      "qtdTotal": 6,
+      "descricao": "Uma guarda-florestal investiga o desaparecimento de trilhas inteiras de um parque nacional — e o que a floresta parece esconder de propósito.",
+      "autorId": "marina-silva"
+    },
+    {
+      "id": 6,
+      "acessos": 39,
+      "criadoEm": 1793389177305,
+      "titulo": "Cartas para o Amanhã",
+      "editora": "Editora Alameda",
+      "ano": 2023,
+      "categoria": "diario",
+      "qtdTotal": 5,
+      "descricao": "O diário fictício de uma professora que escreve, todo fim de ano letivo, uma carta para a turma que ainda vai conhecer.",
+      "autorId": "helena-duarte"
+    },
+    {
+      "id": 7,
+      "acessos": 67,
+      "criadoEm": 1793389177305,
+      "titulo": "Entre Dois Mundos",
+      "editora": "Biblioteca Escolar",
+      "ano": 2019,
+      "categoria": "romance",
+      "qtdTotal": 1,
+      "descricao": "Um imigrante recomeça a vida em uma nova língua, dividido entre a saudade de casa e a vida que insiste em florescer no novo país.",
+      "autorId": "rafael-torres"
+    },
+    {
+      "id": 8,
+      "acessos": 88,
+      "criadoEm": 1793389177305,
+      "titulo": "O Diário Perdido",
+      "editora": "Editora Alameda",
+      "ano": 2018,
+      "categoria": "diario",
+      "qtdTotal": 4,
+      "descricao": "Um caderno encontrado em um sebo revela a rotina de uma adolescente nos anos 1990 — e quem o lê não consegue mais devolvê-lo.",
+      "autorId": "helena-duarte"
+    },
+    {
+      "id": 9,
+      "acessos": 69,
+      "criadoEm": 1793389177305,
+      "titulo": "Vozes do Silêncio",
+      "editora": "Biblioteca Escolar",
+      "ano": 2022,
+      "categoria": "ensaios",
+      "qtdTotal": 5,
+      "descricao": "Ensaios curtos sobre escuta, silêncio e os espaços que a linguagem não alcança — pensados para leitura e debate em sala.",
+      "autorId": "eduardo-prado"
+    },
+    {
+      "id": 10,
+      "acessos": 38,
+      "criadoEm": 1793389177305,
+      "titulo": "Além do Horizonte",
+      "editora": "Editora Alameda",
+      "ano": 2024,
+      "categoria": "romance",
+      "qtdTotal": 8,
+      "descricao": "Uma tripulação de pesquisa passa um ano isolada em uma estação costeira — e aprende a se conhecer pelo que o isolamento revela.",
+      "autorId": "rafael-torres"
+    },
+    {
+      "id": 11,
+      "acessos": 44,
+      "criadoEm": 1793389177305,
+      "titulo": "Dom Casmurro",
+      "autorId": "machado-de-assis",
+      "editora": "Clássicos da Literatura Brasileira",
+      "ano": 1899,
+      "categoria": "romance",
+      "qtdTotal": 5,
+      "descricao": "Obra de Machado de Assis, disponível no acervo da biblioteca escolar."
+    },
+    {
+      "id": 12,
+      "acessos": 89,
+      "criadoEm": 1793389177305,
+      "titulo": "O Alienista",
+      "autorId": "machado-de-assis",
+      "editora": "Clássicos da Literatura Brasileira",
+      "ano": 1882,
+      "categoria": "conto",
+      "qtdTotal": 5,
+      "descricao": "Obra de Machado de Assis, disponível no acervo da biblioteca escolar."
+    },
+    {
+      "id": 13,
+      "acessos": 58,
+      "criadoEm": 1793389177305,
+      "titulo": "Memórias Póstumas de Brás Cubas",
+      "autorId": "machado-de-assis",
+      "editora": "Clássicos da Literatura Brasileira",
+      "ano": 1881,
+      "categoria": "romance",
+      "qtdTotal": 5,
+      "descricao": "Obra de Machado de Assis, disponível no acervo da biblioteca escolar."
+    },
+    {
+      "id": 14,
+      "acessos": 32,
+      "criadoEm": 1793389177305,
+      "titulo": "A Hora da Estrela",
+      "autorId": "clarice-lispector",
+      "editora": "Clássicos da Literatura Brasileira",
+      "ano": 1977,
+      "categoria": "romance",
+      "qtdTotal": 5,
+      "descricao": "Obra de Clarice Lispector, disponível no acervo da biblioteca escolar."
+    },
+    {
+      "id": 15,
+      "acessos": 20,
+      "criadoEm": 1793389177305,
+      "titulo": "Laços de Família",
+      "autorId": "clarice-lispector",
+      "editora": "Clássicos da Literatura Brasileira",
+      "ano": 1960,
+      "categoria": "conto",
+      "qtdTotal": 5,
+      "descricao": "Obra de Clarice Lispector, disponível no acervo da biblioteca escolar."
+    },
+    {
+      "id": 16,
+      "acessos": 78,
+      "criadoEm": 1793389177305,
+      "titulo": "Água Viva",
+      "autorId": "clarice-lispector",
+      "editora": "Clássicos da Literatura Brasileira",
+      "ano": 1973,
+      "categoria": "texto",
+      "qtdTotal": 5,
+      "descricao": "Obra de Clarice Lispector, disponível no acervo da biblioteca escolar."
+    },
+    {
+      "id": 17,
+      "acessos": 28,
+      "criadoEm": 1793389177305,
+      "titulo": "Alguma Poesia",
+      "autorId": "carlos-drummond-de-andrade",
+      "editora": "Clássicos da Literatura Brasileira",
+      "ano": 1930,
+      "categoria": "poema",
+      "qtdTotal": 5,
+      "descricao": "Obra de Carlos Drummond de Andrade, disponível no acervo da biblioteca escolar."
+    },
+    {
+      "id": 18,
+      "acessos": 53,
+      "criadoEm": 1793389177305,
+      "titulo": "A Rosa do Povo",
+      "autorId": "carlos-drummond-de-andrade",
+      "editora": "Clássicos da Literatura Brasileira",
+      "ano": 1945,
+      "categoria": "poema",
+      "qtdTotal": 5,
+      "descricao": "Obra de Carlos Drummond de Andrade, disponível no acervo da biblioteca escolar."
+    },
+    {
+      "id": 19,
+      "acessos": 20,
+      "criadoEm": 1793389177305,
+      "titulo": "Sentimento do Mundo",
+      "autorId": "carlos-drummond-de-andrade",
+      "editora": "Clássicos da Literatura Brasileira",
+      "ano": 1940,
+      "categoria": "poema",
+      "qtdTotal": 5,
+      "descricao": "Obra de Carlos Drummond de Andrade, disponível no acervo da biblioteca escolar."
+    },
+    {
+      "id": 20,
+      "acessos": 69,
+      "criadoEm": 1793389177305,
+      "titulo": "Romanceiro da Inconfidência",
+      "autorId": "cecilia-meireles",
+      "editora": "Clássicos da Literatura Brasileira",
+      "ano": 1953,
+      "categoria": "poema",
+      "qtdTotal": 5,
+      "descricao": "Obra de Cecília Meireles, disponível no acervo da biblioteca escolar."
+    },
+    {
+      "id": 21,
+      "acessos": 61,
+      "criadoEm": 1793389177305,
+      "titulo": "Viagem",
+      "autorId": "cecilia-meireles",
+      "editora": "Clássicos da Literatura Brasileira",
+      "ano": 1939,
+      "categoria": "poema",
+      "qtdTotal": 5,
+      "descricao": "Obra de Cecília Meireles, disponível no acervo da biblioteca escolar."
+    },
+    {
+      "id": 22,
+      "acessos": 56,
+      "criadoEm": 1793389177305,
+      "titulo": "Ou Isto ou Aquilo",
+      "autorId": "cecilia-meireles",
+      "editora": "Clássicos da Literatura Brasileira",
+      "ano": 1964,
+      "categoria": "poema",
+      "qtdTotal": 5,
+      "descricao": "Obra de Cecília Meireles, disponível no acervo da biblioteca escolar."
+    },
+    {
+      "id": 23,
+      "acessos": 37,
+      "criadoEm": 1793389177305,
+      "titulo": "Gabriela, Cravo e Canela",
+      "autorId": "jorge-amado",
+      "editora": "Clássicos da Literatura Brasileira",
+      "ano": 1958,
+      "categoria": "romance",
+      "qtdTotal": 5,
+      "descricao": "Obra de Jorge Amado, disponível no acervo da biblioteca escolar."
+    },
+    {
+      "id": 24,
+      "acessos": 75,
+      "criadoEm": 1793389177305,
+      "titulo": "Capitães da Areia",
+      "autorId": "jorge-amado",
+      "editora": "Clássicos da Literatura Brasileira",
+      "ano": 1937,
+      "categoria": "romance",
+      "qtdTotal": 5,
+      "descricao": "Obra de Jorge Amado, disponível no acervo da biblioteca escolar."
+    },
+    {
+      "id": 25,
+      "acessos": 40,
+      "criadoEm": 1793389177305,
+      "titulo": "Dona Flor e Seus Dois Maridos",
+      "autorId": "jorge-amado",
+      "editora": "Clássicos da Literatura Brasileira",
+      "ano": 1966,
+      "categoria": "romance",
+      "qtdTotal": 5,
+      "descricao": "Obra de Jorge Amado, disponível no acervo da biblioteca escolar."
+    },
+    {
+      "id": 26,
+      "acessos": 24,
+      "criadoEm": 1793389177305,
+      "titulo": "Reinações de Narizinho",
+      "autorId": "monteiro-lobato",
+      "editora": "Clássicos da Literatura Brasileira",
+      "ano": 1931,
+      "categoria": "conto",
+      "qtdTotal": 5,
+      "descricao": "Obra de Monteiro Lobato, disponível no acervo da biblioteca escolar."
+    },
+    {
+      "id": 27,
+      "acessos": 55,
+      "criadoEm": 1793389177305,
+      "titulo": "O Saci",
+      "autorId": "monteiro-lobato",
+      "editora": "Clássicos da Literatura Brasileira",
+      "ano": 1921,
+      "categoria": "conto",
+      "qtdTotal": 5,
+      "descricao": "Obra de Monteiro Lobato, disponível no acervo da biblioteca escolar."
+    },
+    {
+      "id": 28,
+      "acessos": 47,
+      "criadoEm": 1793389177305,
+      "titulo": "Urupês",
+      "autorId": "monteiro-lobato",
+      "editora": "Clássicos da Literatura Brasileira",
+      "ano": 1918,
+      "categoria": "conto",
+      "qtdTotal": 5,
+      "descricao": "Obra de Monteiro Lobato, disponível no acervo da biblioteca escolar."
+    }
+  ]
+}

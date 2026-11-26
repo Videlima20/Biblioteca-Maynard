@@ -78,9 +78,9 @@
   DB.getCategorias = () => ler('categorias');
   DB.getAutores = () => ler('autores');
   DB.getAutoresDestaque = () => ler('autores').filter((a) => a.destaque);
-  DB.registrarAcesso = () => {}; // Contagem do MySQL é somente leitura nesta etapa.
-  DB.getEmprestimos = () => []; // Não confundir histórico local com dados do MySQL.
-  DB.getNotificacoes = () => [];
+  DB.registrarAcesso = async (id) => { const r=await Auth.request('/api/livros/acesso',{id}); if(r.ok && Number.isSafeInteger(r.acessos)){const livro=catalogo?.livros.find(l=>l.id===id);if(livro)livro.acessos=Math.max(livro.acessos,r.acessos);} return r; };
+  DB.getEmprestimos = () => privados.emprestimos; // Não confundir histórico local com dados do MySQL.
+  DB.getNotificacoes = () => privados.notificacoes;
   for (const metodo of ['criarLivro', 'atualizarLivro', 'removerLivro', 'emprestar', 'solicitarDevolucao', 'devolver', 'recusarDevolucao', 'criarUsuario', 'alterarPapel', 'removerUsuario', 'importar']) {
     DB[metodo] = () => ({ ok: false, erro: aviso, motivo: aviso, erros: [aviso] });
   }
@@ -89,4 +89,23 @@
   DB.exportar = () => { throw new Error('Exportação do MySQL não faz parte desta etapa.'); };
   // Defesa contra métodos antigos que tentem gravar coleções localmente.
   DB._gravar = () => false;
+  let privados={emprestimos:[],notificacoes:[],usuarios:[]};
+  DB.carregarPrivado=async()=>{const [emprestimos,notificacoes,usuarios]=await Promise.all([buscar('/api/emprestimos'),buscar('/api/notificacoes'),Auth.isAdmin()?buscar('/api/usuarios'):Promise.resolve([])]);privados={emprestimos,notificacoes,usuarios};};
+  DB.getUsuarios=DB.listarUsuarios=()=>privados.usuarios;
+  async function gravar(url,dados){const r=await Auth.request(url,dados);if(r.ok){catalogo=null;try{await DB.carregarCatalogo();await DB.carregarPrivado();}catch(e){alert('Operação salva. Recarregue a página para atualizar os dados.');location.reload();}}return r;}
+  const salvarLivro=(id,dados)=>{const categoria=DB.getCategorias().find(c=>c.id===dados.categoria);return gravar('/api/acervo/salvar',{...dados,id,categoriaId:categoria?.dbId});};
+  DB.criarLivro=dados=>salvarLivro(0,dados);
+  DB.atualizarLivro=(id,dados)=>salvarLivro(id,dados);
+  DB.removerLivro=id=>gravar('/api/acervo/arquivar',{id});
+  DB.emprestar=({livroId,devolucao})=>gravar('/api/emprestimos',{livroId,devolucao});
+  for(const acao of ['confirmarEmprestimo','recusarEmprestimo','solicitarDevolucao','devolver','recusarDevolucao','reabrirEmprestimo'])DB[acao]=(id)=>gravar('/api/emprestimos/alterar',{id,acao});
+  DB.marcarNotificacao=id=>gravar('/api/notificacoes/ler',{id});
+  DB.criarUsuario=dados=>gravar('/api/admin/usuarios/criar',dados);
+  DB.alterarPapel=(email,tipo)=>gravar('/api/admin/usuarios/papel',{email,tipo});
+  DB.removerUsuario=email=>gravar('/api/admin/usuarios/excluir',{email});
+  DB.exportar=()=>({dados:{livros:DB.getLivros(),usuarios:DB.getUsuarios(),emprestimos:DB.getEmprestimos()}});
+  DB.usoArmazenamento=()=>({bytes:0,limiteBytes:0});
+  DB.validarBackup=()=>({ok:false,erros:['Restauração remota não disponível.']});
+  DB.temBackupMigracao=()=>false;
+  DB.apagarBackupMigracao=()=>false;
 })();

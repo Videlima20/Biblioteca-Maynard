@@ -45,3 +45,26 @@ backups/
 coverage/
 dist/
 build/
+
+# Dependências
+node_modules/
+
+# Credenciais
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+
+# Backups
+backup/
+backups/
+*backup*.json
+
+# Arquivos temporários
+*.zip
+*.log
+*.tmp
+.DS_Store
+Thumbs.db

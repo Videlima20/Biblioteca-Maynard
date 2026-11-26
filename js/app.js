@@ -142,24 +142,25 @@ function toast(msg, tipo = "sucesso") {
   }, 3200);
 }
 
+let cancelarConfirmacao = null;
 function confirmar(mensagem, rotulo = "Confirmar") {
+  if (cancelarConfirmacao) return Promise.resolve(false);
   return new Promise((resolve) => {
     const overlay = $("#confirm-overlay");
+    const btnSim = $("#confirm-sim"), btnNao = $("#confirm-nao");
     $("#confirm-texto").textContent = mensagem;
-    $("#confirm-sim").textContent = rotulo;
-    overlay.classList.add("aberto");
+    btnSim.textContent = rotulo;
     const cleanup = (val) => {
+      if (!cancelarConfirmacao) return;
+      cancelarConfirmacao = null;
       overlay.classList.remove("aberto");
-      btnSim.removeEventListener("click", onSim);
-      btnNao.removeEventListener("click", onNao);
+      btnSim.onclick = btnNao.onclick = null;
       resolve(val);
     };
-    const btnSim = $("#confirm-sim");
-    const btnNao = $("#confirm-nao");
-    const onSim = () => cleanup(true);
-    const onNao = () => cleanup(false);
-    btnSim.addEventListener("click", onSim);
-    btnNao.addEventListener("click", onNao);
+    cancelarConfirmacao = () => cleanup(false);
+    btnSim.onclick = () => cleanup(true);
+    btnNao.onclick = () => cleanup(false);
+    overlay.classList.add("aberto");
   });
 }
 
@@ -176,37 +177,37 @@ function formatarDataISO(valor) {
 /* -------------------------------------------------------------------------
    Inicialização
    ------------------------------------------------------------------------- */
-document.addEventListener("DOMContentLoaded", () => {
-  seedDatabase();
+document.addEventListener("DOMContentLoaded", async () => {
+  await Auth.iniciar();
   const user = Auth.requireSession();
   if (!user) return;
 
-  montarShell(user);
-  montarMenu(user);
-  montarSidebar();
-  ativarNavegacao();
-  ativarNotificacoes();
-  renderCategorias();
-  renderCarrossel();
-  renderCatalogo();
-  renderMaisAcessados();
-  renderNotificacoes();
-  ativarPesquisa();
-  ativarModais();
-
-  if (user.tipo === "admin") {
-    initAreaAdmin();
-  }
-
+  try { await DB.carregarCatalogo(); await DB.carregarPrivado(); } catch(e) { alert("Falha ao carregar dados: " + e.message); return; }
+  $("#usuario-avatar-letra").textContent = user.nome[0].toUpperCase();
+  // Uma falha em um componente não deve impedir a abertura da página.
+  const iniciarComponente = (nome, fn) => {
+    try { fn(); } catch (erro) { console.error(`[Maynard] ${nome}:`, erro); }
+  };
   const [viewInicial, navInicial] = destinoDoHash() || ["inicio", "inicio"];
-  irPara(viewInicial, navInicial, "substituir");
+  // Torna a tela visível antes de inicializar componentes opcionais.
+  ($(`#view-${viewInicial}`) || $("#view-inicio"))?.classList.add("ativo");
+  for (const [nome, fn] of [
+    ["Shell", () => montarShell(user)], ["Menu", () => montarMenu(user)],
+    ["Sidebar", montarSidebar], ["Navegação", ativarNavegacao],
+    ["Categorias", renderCategorias], ["Carrossel", renderCarrossel],
+    ["Catálogo", renderCatalogo], ["Ranking", renderMaisAcessados],
+    ["Pesquisa", ativarPesquisa], ["Modais", ativarModais],
+    ["Notificações (eventos)", ativarNotificacoes], ["Notificações", renderNotificacoes]
+  ]) iniciarComponente(nome, fn);
+  if (user.tipo === "admin") iniciarComponente("Administração", initAreaAdmin);
+  iniciarComponente("Tela inicial", () => irPara(viewInicial, navInicial, "substituir"));
   if (navInicial === "autores") setTimeout(() => document.getElementById("orbita-secao")?.scrollIntoView({ behavior: "smooth", block: "start" }), 300);
 });
 
 function montarShell(user) {
   $("#usuario-nome").textContent = user.nome.split(" ")[0];
   $("#usuario-tipo").textContent = user.tipo === "admin" ? "Administrador(a)" : "Leitor(a)";
-  $$(".btn-logout").forEach((b) => b.addEventListener("click", () => Auth.logout()));
+  $$(".btn-logout").forEach((b) => b.addEventListener("click", acaoUnica(() => Auth.logout())));
 }
 
 function montarMenu(user) {
@@ -344,6 +345,7 @@ function irParaHash() {
 
 function irPara(viewId, navKey = viewId, historico = "novo") {
   if (VIEWS_SO_ADMIN.includes(viewId) && !Auth.isAdmin()) return;
+
   State.navAtiva = navKey || viewId;
   if (historico !== "nenhum") {
     const alvoHash = `#${navKey === "autores" ? "autores" : viewId}`;
@@ -624,20 +626,31 @@ function renderMaisAcessados() {
 /* -------------------------------------------------------------------------
    Detalhe do livro / solicitar empréstimo
    ------------------------------------------------------------------------- */
-/* Conta a visualização só para leitores e no máximo uma vez por livro por sessão
-   (admin conferindo o acervo e cliques repetidos não inflam o ranking). */
-function contarAcessoUmaVezPorSessao(livroId) {
-  if (Auth.isAdmin()) return;
-  let vistos = [];
-  try { vistos = JSON.parse(sessionStorage.getItem("biblioteca_acessos_sessao") || "[]"); } catch (e) { vistos = []; }
-  if (vistos.includes(livroId)) return;
-  DB.registrarAcesso(livroId);
-  try { sessionStorage.setItem("biblioteca_acessos_sessao", JSON.stringify([...vistos, livroId])); } catch (e) { /* ignora */ }
+/* Registra cada abertura, sem duplicar requisições em andamento. */
+const acessosPendentes = new Set();
+async function registrarVisualizacao(livroId) {
+  if (!Auth.isLogged() || acessosPendentes.has(livroId)) return;
+  acessosPendentes.add(livroId);
+  try {
+    const r = await DB.registrarAcesso(livroId);
+    if (!r.ok || !Number.isSafeInteger(r.acessos)) throw new Error(r.erro || "Resposta de acesso inválida.");
+    const livro = DB.getLivros().find(l => l.id === livroId);
+    if (!livro) return;
+    if (State.livroSelecionado?.id === livroId) {
+      State.livroSelecionado.acessos = livro.acessos;
+      $("#detalhe-acessos").textContent = `${livro.acessos} acessos`;
+    }
+    $$(".card-livro").filter(el => Number(el.dataset.id) === livroId).forEach(el => {
+      const contador = $(".card-acesso", el);
+      if (contador) contador.textContent = `${livro.acessos} acessos`;
+    });
+    renderMaisAcessados();
+  } catch (e) { console.error("Falha ao registrar acesso:", e); }
+  finally { acessosPendentes.delete(livroId); }
 }
 
 function abrirDetalheLivro(id) {
   if (!DB.getLivros().some((l) => l.id === id)) return;
-  contarAcessoUmaVezPorSessao(id);
   const livro = DB.getLivros().find((l) => l.id === id);
 
   State.livroSelecionado = livro;
@@ -660,11 +673,12 @@ function abrirDetalheLivro(id) {
   const badge = $("#detalhe-disponibilidade", modal);
   badge.textContent = disp > 0 ? "Disponível" : "Indisponível";
   badge.className = `badge ${disp > 0 ? "badge-disp" : "badge-indisp"}`;
-  $("#btn-solicitar-livro").disabled = disp <= 0;
-  if (disp <= 0) $("#btn-solicitar-livro").textContent = "Indisponível";
+  $("#btn-solicitar-livro").disabled = false;
+  if (disp <= 0) $("#btn-solicitar-livro").textContent = "Reservar livro";
   else $("#btn-solicitar-livro").textContent = "Solicitar livro";
   renderMaisAcessados();
   abrirModal("modal-detalhe");
+  void registrarVisualizacao(id);
 }
 
 function ativarModais() {
@@ -673,10 +687,11 @@ function ativarModais() {
   $$(".modal-overlay").forEach((overlay) => overlay.addEventListener("click", (e) => { if (e.target === overlay) fecharModal(overlay.id); }));
   document.addEventListener("keydown", (e) => { if (e.key === "Escape") $$(".modal-overlay.aberto").forEach((m) => fecharModal(m.id)); });
 
-  $("#btn-solicitar-livro").addEventListener("click", () => {
+  $("#btn-solicitar-livro").addEventListener("click", acaoUnica(async () => {
     const user = Auth.getUser();
     const livro = State.livroSelecionado;
-    if (!user || !livro || Number(livro.qtdDisp) <= 0) return;
+    if (!user || !livro) { toast("Selecione um livro e confira sua sessão.", "erro"); return; }
+    if(Number(livro.qtdDisp)<=0){const r=await Auth.request("/api/reservas",{livroId:livro.id});toast(r.ok?"Reserva registrada.":r.erro,r.ok?undefined:"erro");return;}
     const ativo = DB.getEmprestimos().some((e) => e.email === user.email && e.livroId === livro.id && DB.emAberto(e));
     if (ativo) { toast("Você já possui este livro em empréstimo.", "erro"); return; }
     $("#form-emprestimo-nome").value = user.nome;
@@ -693,14 +708,14 @@ function ativarModais() {
     $("#emprestimo-contexto").innerHTML = `<strong>${escapeHTML(livro.titulo)}</strong><span>${escapeHTML(livro.autor)} · ${escapeHTML(nomeCategoria(livro.categoria))}</span>`;
     fecharModal("modal-detalhe");
     abrirModal("modal-emprestimo");
-  });
+  }));
 
-  $("#form-emprestimo").addEventListener("submit", (e) => {
+  $("#form-emprestimo").addEventListener("submit", acaoUnica(async (e) => {
     e.preventDefault();
     const livro = State.livroSelecionado;
     const user = Auth.getUser();
-    if (!livro || !user) return;
-    const res = DB.emprestar({
+    if (!livro || !user) { toast("Selecione um livro e confira sua sessão.", "erro"); return; }
+    const res = await DB.emprestar({
       livroId: livro.id,
       user,
       nome: $("#form-emprestimo-nome").value,
@@ -716,12 +731,15 @@ function ativarModais() {
     fecharModal("modal-emprestimo");
     toast("Solicitação enviada. Aguarde a confirmação da biblioteca.");
     renderCatalogo(); renderMaisAcessados(); renderNotificacoes(); renderEmprestimos();
-  });
+  }));
 }
 
 
 function abrirModal(id) { $(`#${id}`).classList.add("aberto"); }
-function fecharModal(id) { $(`#${id}`).classList.remove("aberto"); }
+function fecharModal(id) {
+  if (id === "confirm-overlay" && cancelarConfirmacao) { cancelarConfirmacao(); return; }
+  $(`#${id}`)?.classList.remove("aberto");
+}
 
 /* -------------------------------------------------------------------------
    Carrossel 3D de autores + obras sincronizadas
@@ -813,6 +831,21 @@ function renderNotificacoes() {
 
   $("#lista-notificacoes").innerHTML = minhas.length
     ? minhas.map((n) => {
+        const antigo = /Empréstimo\s*#(\d+)\s*:\s*(\w+)/i.exec(String(n.mensagem || "")) || /Empréstimo\s*#(\d+)\s*:\s*(\w+)/i.exec(String(n.titulo || ""));
+        const textos = {
+          solicitacao: ["Solicitação recebida", "Sua solicitação está aguardando aprovação."],
+          confirmarEmprestimo: ["Empréstimo aprovado", "Confira o prazo de devolução."],
+          recusarEmprestimo: ["Empréstimo recusado", "Sua solicitação foi recusada."],
+          solicitarDevolucao: ["Devolução solicitada", "Aguardando confirmação da biblioteca."],
+          devolver: ["Devolução confirmada", "O livro foi devolvido."],
+          recusarDevolucao: ["Devolução recusada", "Consulte seus empréstimos."],
+          reabrirEmprestimo: ["Empréstimo reaberto", "Consulte seus empréstimos."]
+        };
+        if (antigo && Object.prototype.hasOwnProperty.call(textos, antigo[2])) {
+          const [titulo, mensagem] = textos[antigo[2]];
+          const emprestimo = DB.getEmprestimos().find(e => String(e.id) === antigo[1] && e.email === user.email);
+          n = {...n, titulo, mensagem: emprestimo?.titulo ? `${emprestimo.titulo} — ${mensagem}` : mensagem};
+        }
         const detalhes = n.detalhes;
         const isEmprestimo = detalhes?.tipo === "emprestimo";
         const devolucao = detalhes?.devolucao ? new Date(`${detalhes.devolucao}T23:59:59`) : null;
@@ -820,7 +853,7 @@ function renderNotificacoes() {
         return `
           <div class="notificacao-item ${n.lida ? "" : "nao-lida"}" data-notificacao-id="${n.id}" tabindex="0" role="button" aria-expanded="false">
             <div class="notificacao-status-dot"></div>
-            <div class="notificacao-conteudo"><p>${escapeHTML(n.mensagem)}</p><time>${formatarData(n.criadoEm)}</time></div>
+            <div class="notificacao-conteudo">${n.titulo ? `<strong>${escapeHTML(n.titulo)}</strong>` : ""}<p>${escapeHTML(n.mensagem)}</p><time>${formatarData(n.criadoEm)}</time></div>
             ${isEmprestimo ? `<div class="notificacao-detalhes">
               <strong>${escapeHTML(detalhes.titulo)}</strong>
               <span>${escapeHTML(detalhes.autor || "Livro do acervo")}</span>
@@ -842,27 +875,30 @@ function renderNotificacoes() {
     if (sub) sub.textContent = naoLidas ? `${naoLidas} nova${naoLidas === 1 ? "" : "s"}` : "Tudo lido";
   }
 
-  $("#btn-marcar-notificacoes")?.addEventListener("click", (e) => {
+  const marcarTodas = $("#btn-marcar-notificacoes");
+  if (marcarTodas) marcarTodas.onclick = acaoUnica(async (e) => {
     e.stopPropagation();
-    DB.setNotificacoes(DB.getNotificacoes().map((n) => (n.email === user.email ? { ...n, lida: true } : n)));
+    const res = await DB.marcarNotificacao("todas");
+    if (!res.ok) { toast(res.erro, "erro"); return; }
     renderNotificacoes();
   });
 
   $$(".notificacao-item", $("#lista-notificacoes")).forEach((item) => {
-    const id = Number(item.dataset.notificacaoId);
-    const ativar = () => {
+    const id = item.dataset.notificacaoId;
+    const ativar = acaoUnica(async () => {
       const atual = DB.getNotificacoes().find((n) => n.id === id);
       if (atual && !atual.lida) {
-        DB.setNotificacoes(DB.getNotificacoes().map((n) => (n.id === id ? { ...n, lida: true } : n)));
+        const res = await DB.marcarNotificacao(id);
+        if (!res.ok) { toast(res.erro, "erro"); return; }
         item.classList.remove("nao-lida");
         renderNotificacoes();
-        item = $("[data-notificacao-id='" + id + "']");
+        
       }
       if (item) {
         const aberto = item.classList.toggle("expandida");
         item.setAttribute("aria-expanded", aberto ? "true" : "false");
       }
-    };
+    });
     item.addEventListener("click", (e) => {
       if (e.target.closest("[data-open-emprestimos]")) return;
       ativar();
@@ -916,17 +952,17 @@ function renderEmprestimos() {
       </article>`;
     }).join("") : `<div class="estado-vazio estado-vazio-card"><span class="estado-vazio-icon">▱</span><strong>Nenhum empréstimo registrado</strong><p>Explore o catálogo para encontrar seu próximo livro.</p><button type="button" class="btn btn-primario" data-view-target="livros">Explorar catálogo</button></div>`}`;
 
-  $$("[data-devolver]", cont).forEach((btn) => btn.addEventListener("click", async () => {
+  $$("[data-devolver]", cont).forEach((btn) => btn.addEventListener("click", acaoUnica(async () => {
     const id = Number(btn.dataset.devolver);
     const emprestimo = DB.getEmprestimos().find((e) => e.id === id);
-    if (!emprestimo || emprestimo.status !== "ativo") return;
+    if (!emprestimo || emprestimo.status !== "ativo") { toast("Empréstimo não está ativo.", "erro"); return; }
     const ok = await confirmar(`Informar que você devolveu "${emprestimo.titulo}"? A devolução só será concluída quando a biblioteca confirmar o recebimento.`, "Informar devolução");
     if (!ok) return;
-    const res = DB.solicitarDevolucao(id, user);
+    const res = await DB.solicitarDevolucao(id, user);
     if (!res.ok) { toast(res.erro, "erro"); return; }
     toast("Devolução informada. Aguarde a confirmação da biblioteca.");
     renderEmprestimos(); renderCatalogo(); renderMaisAcessados(); renderNotificacoes();
-  }));
+  })));
   $$("[data-view-target]", cont).forEach((btn) => btn.addEventListener("click", () => irPara(btn.dataset.viewTarget)));
 }
 
@@ -949,15 +985,16 @@ function renderMinhaConta() {
   if (contaIniciais) contaIniciais.textContent = user.nome.split(/\s+/).filter(Boolean).slice(0,2).map((p) => p[0]).join("").toUpperCase();
 
   const form = $("#form-conta");
-  form.onsubmit = (e) => {
+  form.onsubmit = acaoUnica(async (e) => {
     e.preventDefault();
     const nome = $("#conta-nome").value.trim();
     if (nome.length < 3) { toast("Informe um nome válido.", "erro"); return; }
-    Auth.atualizarPerfil({ nome, telefone: $("#conta-telefone").value.trim() });
+    const r = await Auth.atualizarPerfil({ nome, telefone: $("#conta-telefone").value.trim() });
+    if (!r.ok) { toast(r.erro,"erro"); return; }
     $("#usuario-nome").textContent = nome.split(" ")[0];
     $("#usuario-avatar-letra").textContent = nome[0].toUpperCase();
     const contaIniciaisAtual = $("#conta-iniciais");
     if (contaIniciaisAtual) contaIniciaisAtual.textContent = nome.split(/\s+/).filter(Boolean).slice(0,2).map((p) => p[0]).join("").toUpperCase();
     toast("Dados atualizados com sucesso.");
-  };
+  });
 }

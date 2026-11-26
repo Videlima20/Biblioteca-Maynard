@@ -98,10 +98,20 @@ function preencherCategoriasGerenciar() {
   select.value = atual;
 }
 
+let adminInicializado = false;
 function initAreaAdmin() {
+  if (adminInicializado) return;
+  adminInicializado = true;
   $("#btn-cadastrar-livro")?.addEventListener("click", () => abrirFormLivro());
-  $("#form-livro")?.addEventListener("submit", (e) => {
+  $("#form-livro")?.addEventListener("submit", async (e) => {
     e.preventDefault();
+    const form = e.currentTarget;
+    if (form.dataset.salvando === "1" || form.dataset.salvo === "1") return;
+    form.dataset.salvando = "1";
+    const botao = $("#modal-livro-botao");
+    const texto = botao.textContent;
+    botao.disabled = true; botao.textContent = "Salvando...";
+    try {
     const dados = {
       titulo: $("#campo-titulo").value,
       autor: $("#campo-autor").value,
@@ -112,12 +122,15 @@ function initAreaAdmin() {
       descricao: $("#campo-descricao").value,
     };
     const id = Number($("#form-livro").dataset.editId || 0);
-    const res = id ? Admin.editarLivro(id, dados) : Admin.cadastrarLivro(dados);
+    const res = await (id ? Admin.editarLivro(id, dados) : Admin.cadastrarLivro(dados));
     if (!res.ok) { toast(res.erro, "erro"); return; }
+    form.dataset.salvo = "1";
     toast(id ? "Livro atualizado com sucesso." : "Livro cadastrado com sucesso.");
     fecharModal("modal-livro");
     renderCatalogo(); renderCategorias(); renderGerenciarLivros(); renderMaisAcessados();
     if (Auth.isAdmin()) renderDashboard();
+    } catch (erro) { console.error(erro); toast("Não foi possível concluir a operação. Confira o catálogo antes de tentar novamente.", "erro"); }
+    finally { delete form.dataset.salvando; botao.disabled = false; botao.textContent = texto; }
   });
   $("#campo-pesquisa-gerenciar")?.addEventListener("input", renderGerenciarLivros);
   $("#filtro-categoria-gerenciar")?.addEventListener("change", renderGerenciarLivros);
@@ -129,6 +142,8 @@ function initAreaAdmin() {
 
 function abrirFormLivro(livro = null) {
   const form = $("#form-livro");
+  if (form.dataset.salvando === "1") return;
+  delete form.dataset.salvo;
   form.reset();
   form.dataset.editId = livro ? livro.id : "";
   const listaAutores = $("#lista-autores");
@@ -179,16 +194,29 @@ function renderGerenciarLivros() {
     </tr>`).join("") : `<tr><td colspan="6"><div class="tabela-vazia"><strong>Nenhum livro encontrado</strong><span>Tente outro título, autor, gênero ou filtro.</span></div></td></tr>`;
 
   $$('[data-editar]').forEach((btn) => btn.addEventListener("click", () => { const livro = DB.getLivros().find((l) => l.id === Number(btn.dataset.editar)); if (livro) abrirFormLivro(livro); }));
-  $$('[data-excluir]').forEach((btn) => btn.addEventListener("click", async () => {
-    const livro = DB.getLivros().find((l) => l.id === Number(btn.dataset.excluir));
-    if (!livro) return;
-    const ok = await confirmar(`Tem certeza que deseja excluir "${livro.titulo}"? Se o livro já teve empréstimos, ele sai do catálogo mas o histórico é preservado.`, "Excluir");
-    if (!ok) return;
-    const res = Admin.excluirLivro(livro.id);
-    if (!res.ok) { toast(res.motivo, "erro"); return; }
-    toast(res.arquivado ? "Livro retirado do catálogo (histórico de empréstimos preservado)." : "Livro excluído com sucesso.");
-    renderCatalogo(); renderCategorias(); renderGerenciarLivros(); renderMaisAcessados(); renderDashboard();
-  }));
+  const corpo = $("#tabela-livros-corpo");
+  corpo.onclick = async (ev) => {
+    const btn = ev.target.closest('[data-excluir]');
+    if (!btn || !corpo.contains(btn) || corpo.dataset.excluindo === "1") return;
+    ev.preventDefault();
+    corpo.dataset.excluindo = "1";
+    btn.disabled = true;
+    try {
+      const livro = DB.getLivros().find(l => Number(l.id) === Number(btn.dataset.excluir));
+      if (!livro) { toast("Livro não encontrado.", "erro"); return; }
+      if (!(await confirmar(`Excluir "${livro.titulo}" do catálogo? O histórico será preservado.`, "Excluir"))) return;
+      const res = await Admin.excluirLivro(livro.id);
+      if (!res.ok) { toast(res.erro || res.motivo || "Não foi possível excluir o livro.", "erro"); return; }
+      toast("Livro retirado do catálogo.");
+      renderGerenciarLivros(); renderCatalogo(); renderCategorias(); renderMaisAcessados(); renderDashboard();
+    } catch (erro) {
+      console.error("Erro ao excluir livro:", erro);
+      toast("Não foi possível concluir a exclusão. Confira o catálogo e o console.", "erro");
+    } finally {
+      delete corpo.dataset.excluindo;
+      btn.disabled = false;
+    }
+  };
 }
 
 function renderDashboard() {
@@ -298,7 +326,7 @@ function renderUsuarios() {
       <td data-label="Total">${u.total}</td>
       <td>${voce ? "" : `<div class="col-acoes">
         <button class="btn-icone" data-us-papel="${escapeHTML(u.email)}" data-us-tipo="${outroTipo}">${u.tipo === "admin" ? "Tornar leitor" : "Tornar admin"}</button>
-        <button class="btn-icone btn-icone-perigo" data-us-excluir="${escapeHTML(u.email)}">Excluir</button>
+        <button class="btn-icone${u.ativo ? " btn-icone-perigo" : ""}" data-us-excluir="${escapeHTML(u.email)}">${u.ativo ? "Desativar" : "Reativar"}</button>
       </div>`}</td>
     </tr>`;
   }).join("") : `<tr><td colspan="6"><div class="tabela-vazia"><strong>Nenhum usuário encontrado</strong><span>Mude o filtro ou a busca.</span></div></td></tr>`;
@@ -313,8 +341,8 @@ function renderSistema() {
   $("#sis-stat-usuarios").textContent = d.usuarios.length;
   $("#sis-stat-emprestimos").textContent = d.emprestimos.length;
   const { bytes, limiteBytes } = DB.usoArmazenamento();
-  $("#sis-stat-uso").textContent = `${Math.max(1, Math.round((bytes / limiteBytes) * 100))}%`;
-  $("#sis-stat-uso-rotulo").textContent = `${(bytes / 1024).toFixed(0)} KB de ~5 MB do navegador`;
+  $("#sis-stat-uso").textContent = "—";
+  $("#sis-stat-uso-rotulo").textContent = "Armazenamento remoto; uso não medido";
   $("#sis-bloco-backup-antigo").style.display = DB.temBackupMigracao() ? "block" : "none";
   mostrarErrosImportacao([]);
 }
@@ -326,8 +354,8 @@ function mostrarErrosImportacao(erros) {
   box.innerHTML = `<strong>Não foi possível importar. Nada foi alterado.</strong><ul style="margin:8px 0 0 18px;">${erros.map((e) => `<li>${escapeHTML(e)}</li>`).join("")}</ul>`;
 }
 
-function baixarBackup() {
-  const conteudo = JSON.stringify(DB.exportar(), null, 2);
+async function baixarBackup() {
+  const r=await Auth.request("/api/admin/backup"); if(!r.ok){toast(r.erro,"erro");return;} const conteudo=JSON.stringify(r.dados,null,2);
   const url = URL.createObjectURL(new Blob([conteudo], { type: "application/json" }));
   const a = document.createElement("a");
   a.href = url;
@@ -336,7 +364,7 @@ function baixarBackup() {
   a.click();
   a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
-  toast("Backup gerado. Guarde o arquivo em local seguro: ele contém senhas.");
+  toast("Exportação dos dois bancos, sem senhas. Contém dados pessoais; guarde em local seguro.");
 }
 
 async function importarArquivoBackup(arquivo) {
@@ -363,31 +391,31 @@ function initAdminExtras() {
   // --- controle de empréstimos
   $("#ae-busca").addEventListener("input", renderAdminEmprestimos);
   $("#ae-filtro").addEventListener("change", renderAdminEmprestimos);
-  $("#ae-corpo").addEventListener("click", async (ev) => {
+  $("#ae-corpo").addEventListener("click", acaoUnica(async (ev) => {
     const confirmarEmp = ev.target.closest("[data-ae-emprestimo-confirmar]");
     if (confirmarEmp) {
       const id = Number(confirmarEmp.dataset.aeEmprestimoConfirmar), emp = DB.getEmprestimos().find(e => e.id === id);
-      if (!emp || emp.status !== "solicitacao") return;
+      if (!emp || emp.status !== "solicitacao") { toast("Solicitação não está mais pendente.", "erro"); return; }
       if (!(await confirmar(`Confirmar que "${emp.titulo}" foi entregue a ${emp.nome || emp.email}?`, "Confirmar empréstimo"))) return;
-      const result = DB.confirmarEmprestimo(id, Auth.getUser()); if (!result.ok) { toast(result.erro, "erro"); return; }
+      const result = await DB.confirmarEmprestimo(id, Auth.getUser()); if (!result.ok) { toast(result.erro, "erro"); return; }
       toast("Empréstimo confirmado e registrado."); renderAdminEmprestimos(); renderCatalogo(); renderNotificacoes(); return;
     }
     const recusarEmp = ev.target.closest("[data-ae-emprestimo-recusar]");
     if (recusarEmp) {
       const id = Number(recusarEmp.dataset.aeEmprestimoRecusar), emp = DB.getEmprestimos().find(e => e.id === id);
-      if (!emp || emp.status !== "solicitacao") return;
+      if (!emp || emp.status !== "solicitacao") { toast("Solicitação não está mais pendente.", "erro"); return; }
       if (!(await confirmar(`Recusar a solicitação de "${emp.titulo}" de ${emp.nome || emp.email}?`, "Recusar empréstimo"))) return;
-      const result = DB.recusarEmprestimo(id, Auth.getUser()); if (!result.ok) { toast(result.erro, "erro"); return; }
+      const result = await DB.recusarEmprestimo(id, Auth.getUser()); if (!result.ok) { toast(result.erro, "erro"); return; }
       toast("Solicitação recusada. O exemplar foi liberado."); renderAdminEmprestimos(); renderCatalogo(); renderNotificacoes(); return;
     }
     const recusar = ev.target.closest("[data-ae-recusar]");
     if (recusar) {
       const idRec = Number(recusar.dataset.aeRecusar);
       const empRec = DB.getEmprestimos().find((e) => e.id === idRec);
-      if (!empRec || empRec.status !== "pendente") return;
+      if (!empRec || empRec.status !== "pendente") { toast("Devolução não está pendente.", "erro"); return; }
       const okRec = await confirmar(`Você NÃO recebeu "${empRec.titulo}" de ${empRec.nome || empRec.email}? O empréstimo voltará a ficar ativo e o leitor será avisado.`, "Não recebi");
       if (!okRec) return;
-      const resRec = DB.recusarDevolucao(idRec, Auth.getUser());
+      const resRec = await DB.recusarDevolucao(idRec, Auth.getUser());
       if (!resRec.ok) { toast(resRec.erro, "erro"); return; }
       toast("Devolução recusada. O empréstimo continua ativo e o leitor foi avisado.");
       renderAdminEmprestimos();
@@ -397,10 +425,10 @@ function initAdminExtras() {
     if (reabrir) {
       const idReabrir = Number(reabrir.dataset.aeReabrir);
       const emprestimo = DB.getEmprestimos().find((e) => e.id === idReabrir);
-      if (!emprestimo || emprestimo.status !== "devolvido") return;
+      if (!emprestimo || emprestimo.status !== "devolvido") { toast("Empréstimo não está devolvido.", "erro"); return; }
       const confirmaReabertura = await confirmar(`Retornar o empréstimo de "${emprestimo.titulo}" de ${emprestimo.nome || emprestimo.email} para em aberto? A devolução registrada será desfeita.`, "Retornar para em aberto");
       if (!confirmaReabertura) return;
-      const resultado = DB.reabrirEmprestimo(idReabrir, Auth.getUser());
+      const resultado = await DB.reabrirEmprestimo(idReabrir, Auth.getUser());
       if (!resultado.ok) { toast(resultado.erro, "erro"); return; }
       toast("Empréstimo retornado para em aberto.");
       renderAdminEmprestimos(); renderCatalogo(); renderNotificacoes(); renderMaisAcessados();
@@ -410,17 +438,17 @@ function initAdminExtras() {
     if (!btn) return;
     const id = Number(btn.dataset.aeDevolver);
     const emp = DB.getEmprestimos().find((e) => e.id === id);
-    if (!emp) return;
+    if (!emp) { toast("Empréstimo não encontrado.", "erro"); return; }
     const pergunta = emp.status === "pendente"
       ? `Você recebeu "${emp.titulo}" de ${emp.nome || emp.email}? Ao confirmar, o exemplar volta ao acervo.`
       : `Registrar a devolução de "${emp.titulo}" por ${emp.nome || emp.email}? Ao confirmar, o exemplar volta ao acervo.`;
     const ok = await confirmar(pergunta, "Confirmar recebimento");
     if (!ok) return;
-    const res = DB.devolver(id, Auth.getUser());
+    const res = await DB.devolver(id, Auth.getUser());
     if (!res.ok) { toast(res.erro, "erro"); return; }
     toast("Devolução confirmada. O leitor foi avisado.");
     renderAdminEmprestimos(); renderCatalogo(); renderMaisAcessados();
-  });
+  }));
 
   // --- usuários
   $("#us-busca").addEventListener("input", renderUsuarios);
@@ -430,9 +458,9 @@ function initAdminExtras() {
     abrirModal("modal-usuario");
     setTimeout(() => $("#usuario-campo-nome").focus(), 100);
   });
-  $("#form-usuario").addEventListener("submit", (e) => {
+  $("#form-usuario").addEventListener("submit", acaoUnica(async (e) => {
     e.preventDefault();
-    const res = DB.criarUsuario({
+    const res = await DB.criarUsuario({
       nome: $("#usuario-campo-nome").value,
       email: $("#usuario-campo-email").value,
       senha: $("#usuario-campo-senha").value,
@@ -442,8 +470,8 @@ function initAdminExtras() {
     fecharModal("modal-usuario");
     toast("Usuário criado. Informe a senha provisória a ele.");
     renderUsuarios();
-  });
-  $("#us-corpo").addEventListener("click", async (ev) => {
+  }));
+  $("#us-corpo").addEventListener("click", acaoUnica(async (ev) => {
     const eu = Auth.getUser();
     const papel = ev.target.closest("[data-us-papel]");
     const excluir = ev.target.closest("[data-us-excluir]");
@@ -452,34 +480,35 @@ function initAdminExtras() {
       const tipo = papel.dataset.usTipo;
       const ok = await confirmar(`Tornar ${email} ${tipo === "admin" ? "administrador(a)" : "leitor(a)"}?`, "Alterar");
       if (!ok) return;
-      const res = DB.alterarPapel(email, tipo, eu.email);
+      const res = await DB.alterarPapel(email, tipo, eu.email);
       if (!res.ok) { toast(res.erro, "erro"); return; }
       toast("Tipo de conta atualizado.");
       renderUsuarios();
     } else if (excluir) {
       const email = excluir.dataset.usExcluir;
-      const ok = await confirmar(`Excluir a conta de ${email}? O histórico de empréstimos dessa pessoa é mantido.`, "Excluir");
+      const acao = excluir.textContent.trim() === "Reativar" ? "Reativar" : "Desativar";
+      const ok = await confirmar(`${acao} o acesso de ${email}?`, acao);
       if (!ok) return;
-      const res = DB.removerUsuario(email, eu.email);
+      const res = await DB.removerUsuario(email, eu.email);
       if (!res.ok) { toast(res.erro, "erro"); return; }
-      toast("Conta excluída.");
+      toast(acao === "Reativar" ? "Conta reativada." : "Conta desativada.");
       renderUsuarios();
     }
-  });
+  }));
 
   // --- backup e dados
-  $("#btn-exportar").addEventListener("click", baixarBackup);
-  $("#btn-importar").addEventListener("click", () => $("#arquivo-importar").click());
+  $("#btn-exportar").addEventListener("click", acaoUnica(baixarBackup));
+  $("#btn-importar").addEventListener("click", () => toast("Restauração online ainda não disponível.", "erro"));
   $("#arquivo-importar").addEventListener("change", async (ev) => {
     const arquivo = ev.target.files[0];
     ev.target.value = "";
     if (arquivo) await importarArquivoBackup(arquivo);
   });
-  $("#btn-apagar-backup-antigo").addEventListener("click", async () => {
+  $("#btn-apagar-backup-antigo").addEventListener("click", acaoUnica(async () => {
     const ok = await confirmar("Apagar a cópia de segurança da atualização anterior? Isso não afeta os dados atuais.", "Apagar");
     if (!ok) return;
     DB.apagarBackupMigracao();
     toast("Backup antigo apagado.");
     renderSistema();
-  });
+  }));
 }

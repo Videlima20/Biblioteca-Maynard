@@ -449,22 +449,22 @@
           <div>
             <span class="secao-eyebrow">Dados</span>
             <h2 class="secao-titulo">Backup e dados</h2>
-            <p class="secao-sub">Todos os dados ficam neste navegador. Se você limpar os dados do site ou trocar de computador, eles se perdem — por isso, exporte um backup de vez em quando.</p>
+            <p class="secao-sub">Os dados da biblioteca ficam no MySQL e MongoDB remotos. Exporte uma cópia para conferência quando necessário.</p>
           </div>
         </div>
         <div class="grid-stats">
-          <div class="stat-card"><span class="valor" id="sis-stat-livros">0</span><span class="rotulo">Livros (inclui arquivados)</span></div>
+          <div class="stat-card"><span class="valor" id="sis-stat-livros">0</span><span class="rotulo">Livros no catálogo</span></div>
           <div class="stat-card"><span class="valor" id="sis-stat-usuarios">0</span><span class="rotulo">Contas</span></div>
           <div class="stat-card"><span class="valor" id="sis-stat-emprestimos">0</span><span class="rotulo">Empréstimos registrados</span></div>
-          <div class="stat-card"><span class="valor" id="sis-stat-uso">0%</span><span class="rotulo" id="sis-stat-uso-rotulo">do espaço do navegador</span></div>
+          <div class="stat-card"><span class="valor" id="sis-stat-uso">0%</span><span class="rotulo" id="sis-stat-uso-rotulo">Armazenamento remoto</span></div>
         </div>
         <div class="painel-form" style="margin-top:22px;display:flex;flex-direction:column;gap:20px;">
           <div class="painel-form-titulo" style="margin-bottom:0;"><span class="secao-eyebrow">Exportar</span><h3>Baixar backup</h3></div>
-          <p class="secao-sub" style="margin-top:-8px;">Gera um arquivo <code>.json</code> com acervo, usuários, empréstimos e notificações. <strong>Atenção:</strong> ele inclui as senhas em texto puro — guarde em local seguro e não compartilhe.</p>
+          <p class="secao-sub" style="margin-top:-8px;">Exporta dados dos dois bancos em JSON, sem hashes de senhas. Contém dados pessoais: guarde em local seguro. Não é um backup restaurável completo.</p>
           <div><button id="btn-exportar" class="btn btn-primario" type="button">Baixar backup</button></div>
           <div class="painel-form-titulo" style="margin-bottom:0;"><span class="secao-eyebrow">Importar</span><h3>Restaurar de um backup</h3></div>
-          <p class="secao-sub" style="margin-top:-8px;">O arquivo é conferido por inteiro antes de qualquer alteração. Se estiver tudo certo, ele <strong>substitui todos os dados atuais</strong> e você precisará entrar de novo.</p>
-          <div><input id="arquivo-importar" type="file" accept="application/json,.json" hidden /><button id="btn-importar" class="btn btn-secundario" type="button">Escolher arquivo de backup…</button></div>
+          <p class="secao-sub" style="margin-top:-8px;">A restauração remota ainda não está disponível.</p>
+          <div><input id="arquivo-importar" type="file" accept="application/json,.json" hidden /><button id="btn-importar" disabled class="btn btn-secundario" type="button">Escolher arquivo de backup…</button></div>
           <div id="sis-erros-importacao" class="login-erro" style="display:none;"></div>
           <div id="sis-bloco-backup-antigo" style="display:none;">
             <div class="painel-form-titulo" style="margin-bottom:12px;"><span class="secao-eyebrow">Limpeza</span><h3>Backup da atualização anterior</h3></div>
@@ -618,12 +618,13 @@
 <script src="js/db.js"></script>
 <script src="js/data.js"></script>
 <script src="js/theme.js"></script>
-<script src="js/auth.js"></script>
+<script src="js/auth.js?v=20261126-botoes2"></script>
 <script src="js/covers.js"></script>
 <script src="js/authors-photo.js"></script>
 <script src="js/carousel3d.js"></script>
-<script src="js/admin.js"></script>
-<script src="js/app.js"></script>
+<script src="js/admin.js?v=20261126-botoes2"></script>
+<script src="js/api-client.js?v=20261126-acessos"></script>
+<script src="js/app.js?v=20261126-acessos"></script>
 <script>
   document.addEventListener("DOMContentLoaded", () => {
     const user = Auth.getUser();

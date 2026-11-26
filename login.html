@@ -154,26 +154,25 @@
   <script src="js/db.js"></script>
   <script src="js/data.js"></script>
   <script src="js/theme.js"></script>
-  <script src="js/auth.js"></script>
+  <script src="js/auth.js?v=20261126-botoes2"></script>
   <script>
-    seedDatabase();
-    if (Auth.isLogged()) window.location.href = "index.html";
+    Auth.iniciar().then(r => { if (r.ok) window.location.href = "index.html"; });
 
     const form = document.getElementById("form-login");
     const erroBox = document.getElementById("login-erro");
 
-    form.addEventListener("submit", (e) => {
+    form.addEventListener("submit", acaoUnica(async (e) => {
       e.preventDefault();
       const email = document.getElementById("login-email").value;
       const senha = document.getElementById("login-senha").value;
-      const res = Auth.login(email, senha);
+      const res = await Auth.login(email, senha);
       if (!res.ok) {
         erroBox.textContent = res.erro;
         erroBox.classList.add("mostrar");
         return;
       }
       window.location.href = "index.html";
-    });
+    }));
 
     const senha = document.getElementById("login-senha");
     const mostrar = document.getElementById("btn-mostrar-senha");
@@ -198,6 +197,7 @@
       abaCriar.setAttribute("aria-selected", String(criar));
       form.hidden = criar;
       demo.hidden = criar;
+
       formRegistro.hidden = !criar;
       document.getElementById("login-titulo").textContent = criar ? "Criar conta" : "Entrar";
       document.getElementById("login-sub").textContent = criar
@@ -209,14 +209,14 @@
     abaCriar.addEventListener("click", () => mostrarAba(true));
 
     const erro = (msg) => { erroBox.textContent = msg; erroBox.classList.add("mostrar"); };
-    formRegistro.addEventListener("submit", (e) => {
+    formRegistro.addEventListener("submit", acaoUnica(async (e) => {
       e.preventDefault();
       const senha1 = document.getElementById("reg-senha").value;
       if (senha1 !== document.getElementById("reg-senha2").value) { erro("As senhas não são iguais."); return; }
-      const res = Auth.registrar(document.getElementById("reg-nome").value, document.getElementById("reg-email").value, senha1);
+      const res = await Auth.registrar(document.getElementById("reg-nome").value, document.getElementById("reg-email").value, senha1);
       if (!res.ok) { erro(res.erro); return; }
       window.location.href = "index.html";
-    });
+    }));
     document.getElementById("btn-mostrar-senhas-reg").addEventListener("click", (e) => {
       const campos = [document.getElementById("reg-senha"), document.getElementById("reg-senha2")];
       const mostrar = campos[0].type === "password";

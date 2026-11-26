@@ -1,78 +1,43 @@
-/* =========================================================================
-   auth.js — Autenticação simulada (sem backend)
-   A sessão vive em sessionStorage; os usuários vêm de DB (js/db.js). Estruturado para que, no futuro,
-   Auth.login() possa virar uma chamada fetch('/api/login') sem mudar
-   quem consome (app.js só chama Auth.getUser() / Auth.isAdmin()).
-   ========================================================================= */
-
+// Impede reentrada enquanto a ação assíncrona estiver em andamento.
+function acaoUnica(fn) {
+  let ocupada = false;
+  return async function (event) {
+    if (event?.type === 'submit') event.preventDefault();
+    if (ocupada) return;
+    ocupada = true;
+    const alvo = event?.currentTarget;
+    const botao = event?.type === 'submit'
+      ? (event.submitter || alvo?.querySelector('button[type="submit"], input[type="submit"]'))
+      : event?.target?.closest('button');
+    const desabilitado = botao?.disabled;
+    if (botao) { botao.disabled = true; botao.setAttribute('aria-busy', 'true'); }
+    try { return await fn.call(this, event); }
+    catch (erro) {
+      console.error("[Maynard] Falha na ação:", erro);
+      const mensagem = "Não foi possível concluir a ação. Confira os dados antes de tentar novamente.";
+      if (typeof toast === "function") toast(mensagem, "erro");
+      else alert(mensagem);
+    }
+    finally {
+      ocupada = false;
+      if (botao) { botao.disabled = desabilitado; botao.removeAttribute('aria-busy'); }
+    }
+  };
+}
 const Auth = {
-  SESSION_KEY: "biblioteca_sessao",
-
-  getUsuarios() {
-    return DB.getUsuarios();
+  usuario: null,
+  async request(url, body) {
+    try {
+      const r = await fetch(url, {cache:'no-store', credentials:'same-origin', ...(body === undefined ? {} : {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})});
+      const d = r.status === 204 ? {} : await r.json();
+      return r.ok ? {ok:true,...d} : {ok:false,erro:d.erro || 'Solicitação recusada.',status:r.status};
+    } catch { return {ok:false,erro:'Não foi possível comunicar com a API.'}; }
   },
-
-  getUser() {
-    const raw = sessionStorage.getItem(this.SESSION_KEY);
-    return raw ? JSON.parse(raw) : null;
-  },
-
-  isLogged() {
-    return !!this.getUser();
-  },
-
-  isAdmin() {
-    const u = this.getUser();
-    return !!u && u.tipo === "admin";
-  },
-
-  login(email, senha) {
-    const usuarios = this.getUsuarios();
-    const found = usuarios.find(
-      (u) => u.email.toLowerCase() === String(email).toLowerCase().trim() && u.senha === senha
-    );
-    if (!found) return { ok: false, erro: "E-mail ou senha inválidos." };
-    const sessao = { email: found.email, nome: found.nome, tipo: found.tipo, telefone: found.telefone || "" };
-    sessionStorage.setItem(this.SESSION_KEY, JSON.stringify(sessao));
-    return { ok: true, usuario: sessao };
-  },
-
-  /* Cadastro público: sempre cria conta de leitor (administrador só é criado por outro administrador). */
-  registrar(nome, email, senha) {
-    const res = DB.criarUsuario({ nome, email, senha, tipo: "usuario" });
-    if (!res.ok) return res;
-    return this.login(email, senha);
-  },
-
-  logout() {
-    sessionStorage.removeItem(this.SESSION_KEY);
-    window.location.href = "login.html";
-  },
-
-  /* Protege uma página: redireciona para login.html se não houver sessão;
-     se exigirAdmin=true e o usuário não for admin, redireciona para index. */
-  requireSession({ exigirAdmin = false } = {}) {
-    const user = this.getUser();
-    if (!user) {
-      window.location.href = "login.html";
-      return null;
-    }
-    if (exigirAdmin && user.tipo !== "admin") {
-      window.location.href = "index.html";
-      return null;
-    }
-    return user;
-  },
-
-  atualizarPerfil(dados) {
-    const user = this.getUser();
-    if (!user) return;
-    const usuarios = this.getUsuarios();
-    const idx = usuarios.findIndex((u) => u.email === user.email);
-    if (idx === -1) return;
-    usuarios[idx] = { ...usuarios[idx], ...dados };
-    DB.setUsuarios(usuarios);
-    const novaSessao = { ...user, ...dados };
-    sessionStorage.setItem(this.SESSION_KEY, JSON.stringify(novaSessao));
-  },
+  async iniciar() { const r=await this.request('/api/sessao'); this.usuario=r.ok?r.usuario:null; return r; },
+  getUser(){return this.usuario;}, isLogged(){return !!this.usuario;}, isAdmin(){return this.usuario?.tipo==='admin';},
+  async login(email,senha){const r=await this.request('/api/login',{email,senha}); if(r.ok)this.usuario=r.usuario; return r;},
+  async registrar(nome,email,senha){const r=await this.request('/api/cadastro',{nome,email,senha}); if(r.ok)this.usuario=r.usuario; return r;},
+  async logout(){const r=await this.request('/api/sair',{}); if(!r.ok){alert(r.erro);return;} this.usuario=null; location.href='login.html';},
+  requireSession(){if(!this.usuario)location.href='login.html';return this.usuario;},
+  async atualizarPerfil(dados){const r=await this.request('/api/perfil',dados);if(r.ok)this.usuario=r.usuario;return r;}
 };

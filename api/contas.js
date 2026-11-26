@@ -24,6 +24,17 @@ function dadosPublicos({ id, nome, email, tipo }) {
 
 module.exports = function registrarContas(app, pool, interpretarJson, origem) {
   const sessoes = new Map();
+  // Bloqueio de requisições idênticas simultâneas por usuário e rota.
+  const emCurso = new Set();
+  function bloquearDuplicadas(req,res,next) {
+    if(req.method !== 'POST') return next();
+    const chave = JSON.stringify([req.usuario.id,req.path,req.body]);
+    if(emCurso.has(chave)) return res.status(409).json({erro:'Esta operação já está em andamento.'});
+    emCurso.add(chave);
+    const liberar=()=>emCurso.delete(chave);
+    res.once('finish',liberar); res.once('close',liberar);
+    next();
+  }
   const hashInexistente = bcrypt.hashSync(randomBytes(32).toString('hex'), CUSTO_HASH);
   const limpeza = setInterval(() => {
     const agora = Date.now();
@@ -87,7 +98,7 @@ module.exports = function registrarContas(app, pool, interpretarJson, origem) {
     try {
       const hash = await bcrypt.hash(senha, CUSTO_HASH);
       const [resultado] = await pool.execute(
-        "INSERT INTO usuarios (nome, email, senha_hash, tipo) VALUES (?, ?, ?, 'usuario')",
+        "INSERT INTO usuarios (nome, email, senha_hash, papel) VALUES (?, ?, ?, 'leitor')",
         [nome, email, hash],
       );
       const usuario = { id: resultado.insertId, nome, email, tipo: 'usuario' };
@@ -107,7 +118,7 @@ module.exports = function registrarContas(app, pool, interpretarJson, origem) {
     if (!emailValido(email) || !senha || Buffer.byteLength(senha, 'utf8') > 72) return invalida();
     try {
       const [usuarios] = await pool.execute(
-        'SELECT id, nome, email, tipo, senha_hash FROM usuarios WHERE email = ? LIMIT 1',
+        "SELECT id, nome, email, CASE WHEN papel = 'administrador' THEN 'admin' ELSE 'usuario' END AS tipo, senha_hash FROM usuarios WHERE email = ? AND ativo=1 LIMIT 1",
         [email],
       );
       const registro = usuarios[0];
@@ -121,16 +132,23 @@ module.exports = function registrarContas(app, pool, interpretarJson, origem) {
     }
   });
 
-  app.get('/api/sessao', (req, res) => {
-    res.set('Cache-Control', 'no-store');
-    const token = tokenDaRequisicao(req);
-    const sessao = sessoes.get(token);
-    if (!sessao || sessao.expiraEm <= Date.now()) {
-      sessoes.delete(token);
-      return res.status(401).json({ erro: 'Entre na sua conta para continuar.' });
-    }
-    res.json({ usuario: sessao.usuario });
+  async function autenticar(req,res,next) {
+    try {
+      const sessao=sessoes.get(tokenDaRequisicao(req));
+      if(!sessao || sessao.expiraEm<=Date.now()) return res.status(401).json({erro:'Entre na sua conta.'});
+      const [rows]=await pool.execute("SELECT id,nome,email,telefone,CASE WHEN papel='administrador' THEN 'admin' ELSE 'usuario' END tipo FROM usuarios WHERE id=? AND ativo=1",[sessao.usuario.id]);
+      if(!rows.length)return res.status(401).json({erro:'Conta indisponível.'});
+      req.usuario=rows[0]; res.set('Cache-Control','no-store'); bloquearDuplicadas(req,res,next);
+    } catch(e){next(e);}
+  }
+  app.get('/api/sessao', autenticar, (req,res)=>{res.set('Cache-Control','no-store');res.json({usuario:req.usuario});});
+  app.post('/api/perfil', protegerPost, interpretarJson, autenticar, async(req,res,next)=>{
+    try {const nome=String(req.body.nome||'').trim(), telefone=String(req.body.telefone||'').trim();
+    if(nome.length<3||nome.length>150||telefone.length>25)return res.status(400).json({erro:'Dados inválidos.'});
+    await pool.execute('UPDATE usuarios SET nome=?,telefone=? WHERE id=?',[nome,telefone,req.usuario.id]);
+    res.json({usuario:{...req.usuario,nome,telefone}});}catch(e){next(e);}
   });
+  require('./operacoes')(app,pool,autenticar,protegerPost,interpretarJson);
 
   app.post('/api/sair', protegerPost, (req, res) => {
     sessoes.delete(tokenDaRequisicao(req));
