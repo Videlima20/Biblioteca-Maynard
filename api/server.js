@@ -10,16 +10,22 @@ const { conectarMongoDB, fecharMongoDB } = require('./config/mongodb');
 
 const app = express();
 const porta = Number(process.env.PORT || 3000);
-const origem = `http://127.0.0.1:${porta}`;
+const hospedado = process.env.RENDER === 'true';
+const origem = hospedado ? process.env.RENDER_EXTERNAL_URL : `http://127.0.0.1:${porta}`;
+if (!origem || (hospedado && new URL(origem).protocol !== 'https:')) {
+  throw new Error('Configure RENDER_EXTERNAL_URL com o endereço HTTPS do serviço.');
+}
+const hostEsperado = new URL(origem).host;
 const pastaSite = path.join(__dirname, '..');
 const pool = criarPoolMySQL();
 
 app.disable('x-powered-by');
 
-// Durante o desenvolvimento local, o site e a API usam o mesmo host.
-// A validação de origem será revista quando a API for publicada atrás de um proxy.
+// Mantém a API e o site na mesma origem, local ou HTTPS.
+// Health check sem dados sensíveis, inclusive para sondas internas do Render.
+app.get('/healthz', (req, res) => res.status(200).send('ok'));
 app.use((req, res, next) => {
-  if (req.get('host') !== new URL(origem).host) {
+  if (req.get('host') !== hostEsperado) {
     return res.status(400).json({ erro: 'Abra o site em ' + origem + '/.' });
   }
   next();
@@ -90,7 +96,7 @@ async function iniciar() {
     await conectarMongoDB();
     console.log(`MongoDB Atlas conectado (banco: ${process.env.MONGODB_DB || 'biblioteca_maynard'}).`);
 
-    servidor = app.listen(porta, '127.0.0.1', () => {
+    servidor = app.listen(porta, hospedado ? '0.0.0.0' : '127.0.0.1', () => {
       console.log(`Biblioteca Maynard: ${origem}/`);
       console.log('Catálogo, cadastro e login conectados ao MySQL. MongoDB disponível para uso pela API.');
     });

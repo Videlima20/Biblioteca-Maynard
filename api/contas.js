@@ -23,6 +23,7 @@ function dadosPublicos({ id, nome, email, tipo }) {
 }
 
 module.exports = function registrarContas(app, pool, interpretarJson, origem) {
+  const cookie = { ...COOKIE, secure: new URL(origem).protocol === 'https:' };
   const sessoes = new Map();
   // Bloqueio de requisições idênticas simultâneas por usuário e rota.
   const emCurso = new Set();
@@ -54,7 +55,7 @@ module.exports = function registrarContas(app, pool, interpretarJson, origem) {
     sessoes.delete(tokenDaRequisicao(req));
     const token = randomBytes(32).toString('hex');
     sessoes.set(token, { usuario, expiraEm: Date.now() + DURACAO_SESSAO });
-    res.cookie(NOME_COOKIE, token, { ...COOKIE, maxAge: DURACAO_SESSAO });
+    res.cookie(NOME_COOKIE, token, { ...cookie, maxAge: DURACAO_SESSAO });
   }
 
   function protegerPost(req, res, next) {
@@ -152,7 +153,7 @@ module.exports = function registrarContas(app, pool, interpretarJson, origem) {
 
   app.post('/api/sair', protegerPost, (req, res) => {
     sessoes.delete(tokenDaRequisicao(req));
-    res.clearCookie(NOME_COOKIE, COOKIE);
+    res.clearCookie(NOME_COOKIE, cookie);
     res.status(204).end();
   });
 };
